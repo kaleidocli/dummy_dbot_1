@@ -1,6 +1,7 @@
 import asyncio
 import os
 import random
+import ujson
 
 import discord
 from discord.ext import tasks, commands
@@ -12,14 +13,10 @@ import datetime
 
 client = discord.Client()
 client.myData = {}
-client.myData['TOKEN'] = "NDQ2MzU2Mjg3MTIzNDg4NzY5.XhN8Rw.xX9WctC0iiik279W2sIcRAnUyDs" #lampart
-client.myData['active_guild'] = 479636890358906881
-client.myData['nsfw_root_dirs'] =  ['C:\\Users\\khang\\__PERSONAL__\\____ Green Corner ____\\The Artworks\\Fraud']
+with open('config.json', mode='r') as f:    # Rename 'config_example.json' to 'config.json'
+    client.myData = ujson.load(f)
 client.myData['nsfw_paths'] = getPaths(client.myData['nsfw_root_dirs'])
-client.myData['nsfw_channel_id'] = 627321277639819277
-client.myData['nsfw_channel'] = client.get_channel(627321277639819277)
-client.myData['nsfw_tagkw'] = 'uown bucu '
-client.myData['nsfw_pagekw'] = 'uown gay '
+client.myData['nsfw_channel'] = client.get_channel(client.myData['nsfw_channel_id'])
 
 @client.event
 async def on_ready():
@@ -37,9 +34,6 @@ async def on_message(msg):
         try:
             if msg.guild.id == client.myData['active_guild']: client.msg_bank.append(msg.content)
         except: pass
-        # if msg.guild.id == 479636890358906881 and msg.author.id == 493716749342998541:
-        #     if '.pick' in msg.embeds[0].description or '.pick' in msg.embeds[0].author.name:
-        #         await msg.channel.send('.pick')
         if msg.channel == client.myData['nsfw_channel'] and client.myData['nsfw_pagekw'] in msg.content:
             try:
                 msg.content = msg.content.replace(client.myData['nsfw_pagekw'], '')
@@ -110,10 +104,5 @@ def getPaths(dirs):
 
 
 
-
-async def main():
-    await client.run(client.myData['TOKEN'], bot=False, reconnect=True)
-
-
 if __name__ == "__main__":
-    client.run(client.myData['TOKEN'], bot=False, reconnect=True)
+    client.run(client.myData['TOKEN'], bot=client.myData['IS_BOT'], reconnect=True)
