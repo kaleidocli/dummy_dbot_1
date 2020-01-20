@@ -1,9 +1,11 @@
 import aiohttp
 import asyncio
 import random
+import time
+import datetime
+import json
 
 import ujson
-import json
 
 
 
@@ -22,7 +24,7 @@ class dClient:
         self.ACTIVATED = False
         self.RESET_POOL = False
         self.IN_USED = False
-        if not default_tag: self.default_tag = ['yuri', 'ahegao']
+        if not default_tag: self.default_tag = ['random']
         else: self.default_tag = default_tag
         self.session = aiohttp.ClientSession(json_serialize=ujson.dumps)
         self.fpConfig = fpConfig
@@ -32,7 +34,8 @@ class dClient:
                 'aaaaa': 'default',          # current playlist. sorting.
                 'default': {
                     'tag': self.default_tag,
-                    'page': 1
+                    'page': 1,
+                    'rating': 'explicit'
                 }
             }
             self.updateConfig(self.config, self.fpConfig)
@@ -57,14 +60,26 @@ class dClient:
         elif int(limit) < 0: limit = '1'
         if page == None: page = str(self.config[self.config_currentPlaylist]['page'])
         else: page = str(page)
-        if tags: tag = '+'.join(tags[0:2])
-        else:
-            if not self.config[self.config_currentPlaylist]['tag']: self.config[self.config_currentPlaylist]['tag'] = self.default_tag
-            tag = '+'.join(self.config[self.config_currentPlaylist]['tag'])
 
-        async with self.session.get('https://danbooru.donmai.us/posts.json?tags={}&limit={}&page={}'.format(tag, limit, page)) as resp:
+        # QUERY: Popular over time
+        if self.config[self.config_currentPlaylist]['tag'] == ['popular']:
+            query = "explore/posts/popular.json?date={}".format(self.random_date('2010-1-1', datetime.datetime.today().strftime('%Y-%m-%d'), random.random()))
+        # QUERY: Tag
+        else:
+            if tags:
+                tag = '+'.join(tags[0:2])
+            else:
+                if not self.config[self.config_currentPlaylist]['tag']: self.config[self.config_currentPlaylist]['tag'] = self.default_tag
+                # QUERY: Random
+                if self.config[self.config_currentPlaylist]['tag'] == ['random']:
+                    tag = '?random=true'
+                else:
+                    tag = 'tags={}'.format('+'.join(self.config[self.config_currentPlaylist]['tag']))
+            query = 'posts.json?{}&limit={}&page={}&rating={}'.format(tag, limit, page, self.config[self.config_currentPlaylist]['rating'])
+
+        async with self.session.get('https://danbooru.donmai.us/{}'.format(query)) as resp:
             content = await resp.json()
-            print(f"<*> GET {len(content)} posts! (p={page})")
+            print(f"""<*> GET {len(content)} posts! (p={page}) (q="{resp.url}")""")
             return content
 
     async def poolFetch(self, first=False):
@@ -81,11 +96,10 @@ class dClient:
                     self.setTag(self.default_tag)
                     self.pool = await self.getPost()
                     print('<*> Query is exhausted. Set back to default tag.')
-                self.config[self.config_currentPlaylist]['page'] = 1
                 self.updateConfig(self.config, self.fpConfig)
                 self.RESET_POOL = False
-                print(f"<*> Resetting pool... (tag=<{self.config[self.config_currentPlaylist]['tag']}>)")
-                return self.pool.pop(random.choice(range(len(self.pool))))            
+                print(f"<*> Resetting pool... (tag={self.config[self.config_currentPlaylist]['tag']})")
+                return self.pool.pop(random.choice(range(len(self.pool))))
 
             try:
                 return self.pool.pop(random.choice(range(len(self.pool))))
@@ -135,6 +149,7 @@ class dClient:
         try:
             self.IN_USED = True
             self.config[self.config_currentPlaylist]['tag'] = tag[0:2]
+            self.config[self.config_currentPlaylist]['page'] = 1
             self.RESET_POOL = True
         finally:
             self.IN_USED = False
@@ -159,3 +174,26 @@ class dClient:
             loop_count += 1
             if loop_count == 4: return False
         return True
+
+    def str_time_prop(self, start, end, format, prop):
+        """
+        SOURCE: @Tom_Alsberg (https://stackoverflow.com/questions/553303/generate-a-random-date-between-two-other-dates)
+
+        Get a time at a proportion of a range of two formatted times.
+
+        start and end should be strings specifying times formated in the
+        given format (strftime-style), giving an interval [start, end].
+        prop specifies how a proportion of the interval to be taken after
+        start.  The returned time will be in the specified format.
+        """
+
+        stime = time.mktime(time.strptime(start, format))
+        etime = time.mktime(time.strptime(end, format))
+
+        ptime = stime + prop * (etime - stime)
+
+        return time.strftime(format, time.localtime(ptime))
+
+
+    def random_date(self, start, end, prop):
+        return self.str_time_prop(start, end, '%Y-%m-%d', prop)
