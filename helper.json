@@ -1,0 +1,26 @@
+{
+    "change_tag": {
+        "brief": "Change up to 2 tags of current NSFW Playlist. (e.g. 'prefix_herealiases_here yuri tentacle')",
+        "help": ""
+    },
+    "change_page": {
+        "brief": "Change page of current NSFW Playlist. Page is automatically increased when current paage is completed. (e.g. 'prefix_herealiases_here 4')",
+        "help": ""
+    },
+    "change_timeInterval": {
+        "brief": "Adjust the randomizing amount of seconds between images. Min=8, Max=180, Min-distance=20. (e.g. 'prefix_herealiases_here 10 25')",
+        "help": ""
+    },
+    "playback": {
+        "brief": "[MOD] Resume/Pause the NSFW Playlist.",
+        "help": ""
+    },
+    "grant_mod": {
+        "brief": "[OWNER] Grant a user moderator previliege.",
+        "help": ""
+    },
+    "info": {
+        "brief": "Show some info",
+        "help": ""
+    }
+}

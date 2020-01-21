@@ -33,6 +33,7 @@ class dClient:
             self.config = {
                 'aaaaa': 'default',          # current playlist. sorting.
                 'default': {
+                    'site': 'https://danbooru.donmai.us',
                     'tag': self.default_tag,
                     'page': 1,
                     'rating': 'explicit'
@@ -77,7 +78,7 @@ class dClient:
                     tag = 'tags={}'.format('+'.join(self.config[self.config_currentPlaylist]['tag']))
             query = 'posts.json?{}&limit={}&page={}&rating={}'.format(tag, limit, page, self.config[self.config_currentPlaylist]['rating'])
 
-        async with self.session.get('https://danbooru.donmai.us/{}'.format(query)) as resp:
+        async with self.session.get('{}/{}'.format(self.config[self.config_currentPlaylist]['site'], query)) as resp:
             content = await resp.json()
             print(f"""<*> GET {len(content)} posts! (p={page}) (q="{resp.url}")""")
             return content
@@ -105,10 +106,10 @@ class dClient:
                 return self.pool.pop(random.choice(range(len(self.pool))))
             except IndexError:
                 if self.ACTIVATED or first:
-                    self.ACTIVATED = True
                     self.config[self.config_currentPlaylist]['page'] += 1
                     print('<*> Pool is empty. Re-filling with new page...')
                 else:
+                    self.ACTIVATED = True
                     print('<*> Pool is empty. Re-filling...')
                 self.pool = await self.getPost()
                 if not self.pool:
