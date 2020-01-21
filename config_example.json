@@ -1,10 +1,31 @@
 {
-    "TOKEN": "",
-    "IS_BOT": true,
-    "prefix": "",
-    "active_guild": 111111111111111111111111,
-    "nsfw_root_dirs": [],
-    "nsfw_channel_id": 111111111111111111111111,
-    "nsfw_tagkw": "",
-    "nsfw_pagekw": ""
+    "TOKEN":"",
+    "owner": 1111111111111111111,
+    "moderator": [1111111111111111111, 1111111111111111111],
+    "IS_BOT":false,
+    "prefix":"",
+    "active_guild":1111111111111111111,
+    "nsfw_root_dirs":[],
+    "nsfw_channel_id":1111111111111111111,
+    "command_aliases":{
+        "change_tag":[
+            "bucu"
+        ],
+        "change_page":[
+            "gay"
+        ],
+        "change_timeInterval":[
+            "dit"
+        ],
+        "playback":[
+            "ditme"
+        ],
+        "info":[
+            "sua"
+        ]
+    },
+    "time_interval":[
+        15,
+        30
+    ]
 }

@@ -75,7 +75,8 @@ async def on_message(msg):
     if not client.IS_BOT_READY: return
 
     # Sticking reaction
-    if 'uon' in msg.content or 'ươn' in msg.content or 'uown' in msg.content or 'Cyberlife' in msg.content:
+    msg.content = msg.content.lower()
+    if 'uon' in msg.content or 'ươn' in msg.content or 'uown' in msg.content or 'cyberlife' in msg.content:
         await msg.add_reaction('\U0001f595')
     # elif msg.author.id in (337234105219416067, 214128381762076672, 413423796456914955) or msg.content == 'baa':
     #     # await msg.add_reaction('\U0001f411')
