@@ -37,7 +37,12 @@ class dClient:
                     'tag': self.default_tag,
                     'page': 1,
                     'rating': 'explicit'
-                }
+                },
+                "page":16,
+                "blacklist":[
+                    "guro",
+                    "scat"
+                ]
             }
             self.updateConfig(self.config, self.fpConfig)
             print('<*> Config not found, so one is created!')

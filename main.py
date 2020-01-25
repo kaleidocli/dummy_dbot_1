@@ -79,19 +79,21 @@ async def on_message(msg):
     if not client.IS_BOT_READY: return
 
     # Sticking reaction
-    if msg.guild.id == 479636890358906881:
-        # CONVERSATIONN ANALYSIS
-        if client.myData['IS_RECORDING'] and msg.channel.id == client.CM.config['targetChannelID']:
-            content = filteringConv(msg)
-            if content:
-                try: await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
-                except RuntimeError:
-                    await asyncio.sleep(0.01)
-                    await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
+    try:
+        if msg.guild.id == 479636890358906881:
+            # CONVERSATIONN ANALYSIS
+            if client.myData['IS_RECORDING'] and msg.channel.id == client.CM.config['targetChannelID']:
+                content = filteringConv(msg)
+                if content:
+                    try: await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
+                    except RuntimeError:
+                        await asyncio.sleep(0.01)
+                        await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
 
-        msg.content = msg.content.lower()
-        if 'uon' in msg.content or 'ươn' in msg.content or 'uown' in msg.content or 'cyberlife' in msg.content:
-            await msg.add_reaction('\U0001f595')
+            msg.content = msg.content.lower()
+            if 'uon' in msg.content or 'ươn' in msg.content or 'uown' in msg.content or 'cyberlife' in msg.content:
+                await msg.add_reaction('\U0001f595')
+    except AttributeError: pass
     # elif msg.author.id in (337234105219416067, 214128381762076672, 413423796456914955) or msg.content == 'baa':
     #     # await msg.add_reaction('\U0001f411')
     #     await msg.channel.send(random.choice(client.msg_bank))
@@ -236,7 +238,7 @@ async def info(ctx, *args):
         client.myData['IS_RUNNING'],
         client.myData['nsfw_channel'].name,
         client.myData['prefix'],
-        client.dClient.config['blacklist']
+        '` `'.join(client.dClient.config['blacklist'])
     ))
 
 @client.command(hidden=True)

@@ -5,8 +5,11 @@
         "rating":"explicit",
         "tag":[
             "popular"
-        ],
-        "page":16,
-        "blacklist": ["guro", "scat"]
-    }
+        ]
+    },
+    "page":16,
+    "blacklist":[
+        "guro",
+        "scat"
+    ]
 }
