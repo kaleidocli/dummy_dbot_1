@@ -9,6 +9,7 @@ from discord.ext import tasks, commands
 import ujson
 
 from dClient import dClient
+from conversation import Conversation, ConversationManager
 import datetime
 
 
@@ -65,6 +66,9 @@ async def on_ready():
     client.myData['nsfw_paths'] = getPaths(client.myData['nsfw_root_dirs'])
     client.myData['nsfw_channel'] = client.get_channel(client.myData['nsfw_channel_id'])
     client.myData['IS_RUNNING'] = True
+    client.myData['IS_RECORDING'] = False
+
+    client.CM = ConversationManager(targetChannelID=660081356860030989)
 
     nsfw_loop.start()
     client.IS_BOT_READY = True
@@ -76,6 +80,15 @@ async def on_message(msg):
 
     # Sticking reaction
     if msg.guild.id == 479636890358906881:
+        # CONVERSATIONN ANALYSIS
+        if client.myData['IS_RECORDING'] and msg.channel.id == client.CM.config['targetChannelID']:
+            content = filteringConv(msg)
+            if content:
+                try: await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
+                except RuntimeError:
+                    await asyncio.sleep(0.01)
+                    await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
+
         msg.content = msg.content.lower()
         if 'uon' in msg.content or 'ươn' in msg.content or 'uown' in msg.content or 'cyberlife' in msg.content:
             await msg.add_reaction('\U0001f595')
@@ -124,7 +137,9 @@ async def help(ctx, *args):
 @check_nsfwChannel()
 async def change_tag(ctx, *args):
     if not args: return
-    args = list(args)
+    common = set(args).intersection(client.dClient.config['config'])
+    if common:
+        await ctx.send(":warning: Tags `{}` blacklisted!".format('` `'.join(common))); return
 
     client.dClient.setTag(args)
     print(client.dClient.config[client.dClient.config_currentPlaylist]['tag'])
@@ -211,7 +226,8 @@ async def info(ctx, *args):
     await ctx.send("""
         >>> Browsing `{}` for [**`{}`**]. Average posting speed: `{}~{} secs/img`.
         **Alive?** {}
-        Sheltering at {}, and you can reach me by `{}`.
+        Sheltering at **{}**, and listening to `{}`.
+        Blacklist: [`{}`]
     """.format(
         client.dClient.config[client.dClient.config_currentPlaylist]['site'],
         '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['tag']),
@@ -219,8 +235,39 @@ async def info(ctx, *args):
         client.myData['time_interval'][1],
         client.myData['IS_RUNNING'],
         client.myData['nsfw_channel'].name,
-        client.myData['prefix']
+        client.myData['prefix'],
+        client.dClient.config['config']
     ))
+
+@client.command(hidden=True)
+@check_owner()
+async def record(ctx, *args):
+    try:
+        if args[0] == 'save':
+            client.CM.saveData()
+        elif args[0] == 'lock':
+            try: client.CM.lockConv(' '.join(args[1:]))
+            except KeyError: return
+        await ctx.send(":white_check_mark:")
+        return
+    except IndexError: pass
+
+    if client.myData['IS_RECORDING']:
+        client.myData['IS_RECORDING'] = False
+        await ctx.send("Paused")
+    else:
+        client.myData['IS_RECORDING'] = True
+        await ctx.send("Resumed")
+
+@client.command(hidden=True)
+@check_owner()
+async def simuta(ctx, *args):
+    ranc = random.choice(tuple(client.CM.bank.values()))
+    await ctx.send(f"Here's a conversation with {len(ranc.contributor)} contributors.")
+    for p in ranc.timeline:
+        for line in p[1]:
+            await asyncio.sleep(random.choice(range(1, 3)))
+            await ctx.send(f"`[{p[0][2]}]` {line}")
 
 
 
@@ -289,6 +336,18 @@ def updateConfig(myData, config_path='config.json'):
         temp_conf[o] = myData[o]
     with open(config_path, mode='w') as f:
         ujson.dump(temp_conf, f, indent=4)
+
+def filteringConv(msg):
+    """
+        Return content of a message object
+    """
+
+    if msg.author.bot or msg.author == client.user: return ''
+    if msg.role_mentions: return ''
+    try:
+        msg.content += msg.attachments[0].url
+    except IndexError: pass
+    return msg.content
 
 def exiting():
     client.dClient.updateConfig(client.dClient.config, client.dClient.fpConfig)
