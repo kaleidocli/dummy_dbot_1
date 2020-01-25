@@ -64,7 +64,13 @@ class dClient:
         """
         if int(limit) > 1000: limit = '1000'
         elif int(limit) < 0: limit = '1'
-        if page == None: page = str(self.config[self.config_currentPlaylist]['page'])
+        if page == None:
+            print("HEEEEEEEEEEEEEEEEEE")
+            a = self.config[self.config_currentPlaylist]
+            print(a)
+            b = a['page']
+            print("HEEEEEEEEEEEEEEEEEE")
+            page = str(b)
         else: page = str(page)
 
         # QUERY: Popular over time

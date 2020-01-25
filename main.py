@@ -139,7 +139,7 @@ async def help(ctx, *args):
 @check_nsfwChannel()
 async def change_tag(ctx, *args):
     if not args: return
-    common = set(args).intersection(client.dClient.config['config'])
+    common = set(args).intersection(client.dClient.config[client.dClient.config_currentPlaylist]['blacklist'])
     if common:
         await ctx.send(":warning: Tags `{}` blacklisted!".format('` `'.join(common))); return
 
@@ -238,7 +238,7 @@ async def info(ctx, *args):
         client.myData['IS_RUNNING'],
         client.myData['nsfw_channel'].name,
         client.myData['prefix'],
-        '` `'.join(client.dClient.config['blacklist'])
+        '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['blacklist'])
     ))
 
 @client.command(hidden=True)
@@ -328,7 +328,8 @@ def getPaths(dirs):
         return paths
 
     for dir_path in dirs:
-        paths = walkthrough(dir_path, paths)
+        try: paths = walkthrough(dir_path, paths)
+        except FileNotFoundError: print(f"<!> FileNotFound error ({dir_path})")
     
     return paths
 
