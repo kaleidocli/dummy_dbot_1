@@ -236,7 +236,7 @@ async def info(ctx, *args):
         client.myData['IS_RUNNING'],
         client.myData['nsfw_channel'].name,
         client.myData['prefix'],
-        client.dClient.config['config']
+        client.dClient.config['blacklist']
     ))
 
 @client.command(hidden=True)
