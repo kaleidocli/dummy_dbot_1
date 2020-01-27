@@ -143,7 +143,7 @@ async def change_tag(ctx, *args):
     if common:
         await ctx.send(":warning: Tags `{}` blacklisted!".format('` `'.join(common))); return
 
-    client.dClient.setTag(args)
+    client.dClient.setTag(list(args))
     print(client.dClient.config[client.dClient.config_currentPlaylist]['tag'])
     await ctx.channel.send("Okay Imma bu some cu with `{}`. If I can't, just `{}` will do for me. yea?".format('` `'.join(args), '` `'.join(client.dClient.default_tag)))
 
