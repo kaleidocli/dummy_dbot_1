@@ -47,7 +47,8 @@ client.IS_BOT_READY = False
 
 
 extensions = [
-    'error_handler'
+    'cog.error_handler',
+    'cog.misc'
 ]
 
 
