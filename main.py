@@ -362,7 +362,7 @@ def exiting():
     print("========================== SAVED and EXIT ==========================")
 
 async def starting():
-    await client.login('NDQ2NDMxODcyNTQ1ODQ5MzU0.Xj25pg.kK7VTSclmw8e4n6OK0xGHKNx_AE', bot=False)
+    await client.login(client.myData['TOKEN'], bot=False)
     # await client.login('NDQ2MzU2Mjg3MTIzNDg4NzY5.XiWEyg._jdIrF2tuYxoIL65ZpUfy1_iRt0', bot=False)
     print("LOGGED IN")
     await client.connect(reconnect=True)
