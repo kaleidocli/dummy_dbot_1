@@ -82,17 +82,18 @@ async def on_message(msg):
     # Sticking reaction
     try:
         if msg.guild.id == 479636890358906881:
-            # CONVERSATIONN ANALYSIS
-            if client.myData['IS_RECORDING'] and msg.channel.id == client.CM.config['targetChannelID']:
-                content = filteringConv(msg)
-                if content:
-                    try: await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
-                    except RuntimeError:
-                        await asyncio.sleep(0.01)
-                        await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
+            # # CONVERSATIONN ANALYSIS
+            # if client.myData['IS_RECORDING'] and msg.channel.id == client.CM.config['targetChannelID']:
+            #     content = filteringConv(msg)
+            #     if content:
+            #         try: await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
+            #         except RuntimeError:
+            #             await asyncio.sleep(0.01)
+            #             await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
 
             msg.content = msg.content.lower()
             if 'uon' in msg.content or 'ươn' in msg.content or 'uown' in msg.content or 'cyberlife' in msg.content:
+                await asyncio.sleep(1)
                 await msg.add_reaction('\U0001f595')
     except AttributeError: pass
     # elif msg.author.id in (337234105219416067, 214128381762076672, 413423796456914955) or msg.content == 'baa':
@@ -186,7 +187,7 @@ async def change_timeInterval(ctx, *args):
                 client.myData['time_interval'][0] = client.myData['time_interval'][1] - 20
             if a <= 28:
                 client.myData['time_interval'][1] = client.myData['time_interval'][0] + 20
-    except IndexError: await ctx.send(f":warning: [**`{client.myData['time_interval'][0]} ~ {client.myData['time_interval'][1]}`**] Please type in `min_time` and `max_time` (e.g. `{client.myData['prefix']}{client.myData['command_aliases']['change_timeInterval']} 10 25`) (Min=8, Max=300)"); return
+    except (IndexError, ValueError): await ctx.send(f":warning: [**`{client.myData['time_interval'][0]} ~ {client.myData['time_interval'][1]}`**] Please type in `min_time` and `max_time` (e.g. `{client.myData['prefix']}{client.myData['command_aliases']['change_timeInterval']} 10 25`) (Min=8, Max=300)"); return
 
     await ctx.send(f":white_check_mark: Time interval is set as **`{client.myData['time_interval'][0]} ~ {client.myData['time_interval'][1]}`** secs.")
 
@@ -195,7 +196,6 @@ async def change_timeInterval(ctx, *args):
 @client.command(aliases=client.myData['command_aliases']['playback'], brief=client.helpDict['playback']['brief'])
 @commands.cooldown(1, 10, type=BucketType.user)
 @check_nsfwChannel()
-@check_mod()
 async def playback(ctx, *args):
     try:
         if args[0] == 'pause': client.myData['IS_RUNNING'] = False
@@ -242,7 +242,7 @@ async def info(ctx, *args):
         client.myData['nsfw_channel'].name,
         client.myData['prefix'],
         '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['blacklist']),
-        '` `'.join([client.get_user(uid).mention for uid in client.dClient.config[client.dClient.config_currentPlaylist]['blacklist'] if uid])
+        '` `'.join([client.get_user(uid).mention for uid in client.dClient.config[client.dClient.config_currentPlaylist]['blacklist'] if client.get_user(uid)])
     ))
 
 @client.command(hidden=True)
@@ -362,7 +362,7 @@ def exiting():
     print("========================== SAVED and EXIT ==========================")
 
 async def starting():
-    await client.login('NDQ2NDMxODcyNTQ1ODQ5MzU0.Xj2zsg.0AH0vf5l47jZEwiQ0lofXqb51YU', bot=False)
+    await client.login('NDQ2NDMxODcyNTQ1ODQ5MzU0.Xj25pg.kK7VTSclmw8e4n6OK0xGHKNx_AE', bot=False)
     # await client.login('NDQ2MzU2Mjg3MTIzNDg4NzY5.XiWEyg._jdIrF2tuYxoIL65ZpUfy1_iRt0', bot=False)
     print("LOGGED IN")
     await client.connect(reconnect=True)
