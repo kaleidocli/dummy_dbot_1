@@ -121,9 +121,9 @@ def check_owner():
         return ctx.message.author.id == client.myData['owner']
     return commands.check(inner)
 
-@client.command(aliases=['cuu_tao'])
-async def help(ctx, *args):
-    await ctx.send('https://imgur.com/a/GjfUh66.png')
+# @client.command(aliases=['cuu_tao'])
+# async def help(ctx, *args):
+#     await ctx.send('https://imgur.com/a/GjfUh66.png')
     #     await ctx.send(f"""
     #         ```css
     # PREFIX == '{client.myData['prefix']}'
@@ -172,7 +172,7 @@ async def change_timeInterval(ctx, *args):
         if a < 8 or b < 8:
             client.myData['time_interval'][0] = 8
             client.myData['time_interval'][1] = client.myData['time_interval'][0] + 20
-        elif a > 180 or b > 180:
+        elif a > 300 or b > 300:
             client.myData['time_interval'][1] = 8
             client.myData['time_interval'][0] = client.myData['time_interval'][1] - 20
         elif a < b:
@@ -182,11 +182,11 @@ async def change_timeInterval(ctx, *args):
             client.myData['time_interval'][0] = b
             client.myData['time_interval'][1] = a
         elif a == b:
-            if b >= 160:
+            if b >= 280:
                 client.myData['time_interval'][0] = client.myData['time_interval'][1] - 20
             if a <= 28:
                 client.myData['time_interval'][1] = client.myData['time_interval'][0] + 20
-    except IndexError: await ctx.send(f":warning: [**`{client.myData['time_interval'][0]} ~ {client.myData['time_interval'][1]}`**] Please type in `min_time` and `max_time` (e.g. `{client.myData['prefix']}{client.myData['command_aliases']['change_timeInterval']} 10 25`) (Min=8, Max=180)"); return
+    except IndexError: await ctx.send(f":warning: [**`{client.myData['time_interval'][0]} ~ {client.myData['time_interval'][1]}`**] Please type in `min_time` and `max_time` (e.g. `{client.myData['prefix']}{client.myData['command_aliases']['change_timeInterval']} 10 25`) (Min=8, Max=300)"); return
 
     await ctx.send(f":white_check_mark: Time interval is set as **`{client.myData['time_interval'][0]} ~ {client.myData['time_interval'][1]}`** secs.")
 
@@ -226,11 +226,13 @@ async def grant_mod(ctx, *args):
 
 @client.command(aliases=client.myData['command_aliases']['info'], brief=client.helpDict['info']['brief'])
 async def info(ctx, *args):
+
     await ctx.send("""
         >>> Browsing `{}` for [**`{}`**]. Average posting speed: `{}~{} secs/img`.
         **Alive?** {}
         Sheltering at **{}**, and listening to `{}`.
         Blacklist: [`{}`]
+        MOD: [`{}`]
     """.format(
         client.dClient.config[client.dClient.config_currentPlaylist]['site'],
         '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['tag']),
@@ -239,7 +241,8 @@ async def info(ctx, *args):
         client.myData['IS_RUNNING'],
         client.myData['nsfw_channel'].name,
         client.myData['prefix'],
-        '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['blacklist'])
+        '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['blacklist']),
+        '` `'.join([client.get_user(uid).mention for uid in client.dClient.config[client.dClient.config_currentPlaylist]['blacklist'] if uid])
     ))
 
 @client.command(hidden=True)
@@ -358,13 +361,21 @@ def exiting():
     updateConfig(client.myData)
     print("========================== SAVED and EXIT ==========================")
 
+async def starting():
+    await client.login('NDQ2NDMxODcyNTQ1ODQ5MzU0.Xj2zsg.0AH0vf5l47jZEwiQ0lofXqb51YU', bot=False)
+    # await client.login('NDQ2MzU2Mjg3MTIzNDg4NzY5.XiWEyg._jdIrF2tuYxoIL65ZpUfy1_iRt0', bot=False)
+    print("LOGGED IN")
+    await client.connect(reconnect=True)
+
 
 
 
 if __name__ == "__main__":
-    for e in extensions:
-        client.load_extension(e)
-
-    atexit.register(exiting)
-    client.run(client.myData['TOKEN'], bot=client.myData['IS_BOT'], reconnect=True)
-    # client.run('NDQ5Mjc4ODExMzY5MTExNTUz.Xcodxg.9TAsDeHjUghAD_D0VH14j6nmCOg', bot=True, reconnect=True)
+    # for e in extensions:
+    #     client.load_extension(e)
+    
+    # atexit.register(exiting)
+    # client.run(client.myData['TOKEN'], bot=client.myData['IS_BOT'], reconnect=True)
+    # client.run('NDQ2MzU2Mjg3MTIzNDg4NzY5.XiWEyg._jdIrF2tuYxoIL65ZpUfy1_iRt0', bot=False, reconnect=True)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(starting())
