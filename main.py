@@ -279,7 +279,7 @@ async def simuta(ctx, *args):
 
 @client.command(hidden=True)
 @check_owner()
-async def simuta(ctx, *args):
+async def block(ctx, *args):
     try:
         try: target = ctx.message.mentions[0]
         except IndexError: pass
