@@ -43,6 +43,7 @@ client.myData = temp
 client.helpDict = prepHelpDict()
 client.myData['root_config'] = ['TOKEN', 'IS_BOT', 'owner', 'moderator', 'prefix', 'active_guild', 'nsfw_root_dirs', 'nsfw_channel_id', 'command_aliases', 'time_interval']
 client.IS_BOT_READY = False
+client.POSTING = False
 
 
 
@@ -68,6 +69,7 @@ async def on_ready():
     client.myData['nsfw_channel'] = client.get_channel(client.myData['nsfw_channel_id'])
     client.myData['IS_RUNNING'] = True
     client.myData['IS_RECORDING'] = False
+    client.myData['blocklist'] = []
 
     client.CM = ConversationManager(targetChannelID=660081356860030989)
 
@@ -78,6 +80,7 @@ async def on_ready():
 @client.event
 async def on_message(msg):
     if not client.IS_BOT_READY: return
+    if msg.author.id in client.myData['blocklist']: return
 
     # Sticking reaction
     try:
@@ -92,8 +95,7 @@ async def on_message(msg):
             #             await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
 
             msg.content = msg.content.lower()
-            if 'uon' in msg.content or 'ươn' in msg.content or 'uown' in msg.content or 'cyberlife' in msg.content:
-                await asyncio.sleep(1)
+            if 'uon' in msg.content or 'ươn' in msg.content or 'uown' in msg.content or 'cyberlife' in msg.content: 
                 await msg.add_reaction('\U0001f595')
     except AttributeError: pass
     # elif msg.author.id in (337234105219416067, 214128381762076672, 413423796456914955) or msg.content == 'baa':
@@ -242,7 +244,7 @@ async def info(ctx, *args):
         client.myData['nsfw_channel'].name,
         client.myData['prefix'],
         '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['blacklist']),
-        '` `'.join([client.get_user(uid).mention for uid in client.dClient.config[client.dClient.config_currentPlaylist]['blacklist'] if client.get_user(uid)])
+        '` `'.join([client.get_user(uid).mention for uid in client.myData['moderator'] if client.get_user(uid)])
     ))
 
 @client.command(hidden=True)
@@ -275,14 +277,34 @@ async def simuta(ctx, *args):
             await asyncio.sleep(random.choice(range(1, 3)))
             await ctx.send(f"`[{p[0][2]}]` {line}")
 
+@client.command(hidden=True)
+@check_owner()
+async def simuta(ctx, *args):
+    try:
+        try: target = ctx.message.mentions[0]
+        except IndexError: pass
+        if not target.isdigit(): raise IndexError
+    except IndexError: await ctx.send(":warning: Missing target's mention/ID"); return
+
+    if target in client.myData['moderator'] or target = client.myData['owner']:
+        await ctx.send(":warning: Invalid target's mention/ID"); return
+    
+    if target in client.myData['blocklist']:
+        client.myData['blocklist'].remove(target)
+        await ctx.send(":white_check_mark: Unblocked!"); return
+    else:
+        await ctx.send(":white_check_mark: BLOCKED!"); return
 
 
 
 
-
-@tasks.loop(seconds=random.choice(range(client.myData['time_interval'][0], client.myData['time_interval'][1])))       # anti-antiSelfbot
+@tasks.loop(seconds=3)       # anti-antiSelfbot
 async def nsfw_loop():
     global client
+    if not client.POSTING: client.POSTING = True
+    else: return
+
+    await asyncio.sleep(random.choice(range(client.myData['time_interval'][0], client.myData['time_interval'][1])))             # anti-antiSelfbot
 
     try:
         if not client.myData['nsfw_channel'].is_nsfw():
@@ -308,7 +330,10 @@ async def nsfw_loop():
             url
             )
         )
+    
+    client.POSTING = False
     print(f" |  [{datetime.datetime.now()}]   ---   [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}][{len(client.dClient.pool)}] ", url)
+
 
 
 
