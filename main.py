@@ -286,7 +286,7 @@ async def simuta(ctx, *args):
         if not target.isdigit(): raise IndexError
     except IndexError: await ctx.send(":warning: Missing target's mention/ID"); return
 
-    if target in client.myData['moderator'] or target = client.myData['owner']:
+    if target in client.myData['moderator'] or target == client.myData['owner']:
         await ctx.send(":warning: Invalid target's mention/ID"); return
     
     if target in client.myData['blocklist']:
