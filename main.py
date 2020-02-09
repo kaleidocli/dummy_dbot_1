@@ -38,7 +38,7 @@ with open('config.json', mode='r') as f:    # Rename 'config_example.json' to 'c
     temp = ujson.load(f)
 
 client = commands.Bot(command_prefix=temp['prefix'])
-client.remove_command('help')
+# client.remove_command('help')
 client.myData = temp
 client.helpDict = prepHelpDict()
 client.myData['root_config'] = ['TOKEN', 'IS_BOT', 'owner', 'moderator', 'prefix', 'active_guild', 'nsfw_root_dirs', 'nsfw_channel_id', 'command_aliases', 'time_interval']
@@ -94,8 +94,8 @@ async def on_message(msg):
             #             await asyncio.sleep(0.01)
             #             await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
 
-            msg.content = msg.content.lower()
-            if 'uon' in msg.content or 'ươn' in msg.content or 'uown' in msg.content or 'cyberlife' in msg.content: 
+            content = msg.content.lower()
+            if 'uon' in content or 'ươn' in content or 'uown' in content: 
                 await msg.add_reaction('\U0001f595')
     except AttributeError: pass
     # elif msg.author.id in (337234105219416067, 214128381762076672, 413423796456914955) or msg.content == 'baa':
@@ -283,7 +283,8 @@ async def block(ctx, *args):
     try:
         try: target = ctx.message.mentions[0]
         except IndexError: pass
-        if not target.isdigit(): raise IndexError
+        if not args[0].isdigit(): raise IndexError
+        else: target = int(args)
     except IndexError: await ctx.send(":warning: Missing target's mention/ID"); return
 
     if target in client.myData['moderator'] or target == client.myData['owner']:
@@ -303,17 +304,21 @@ async def nsfw_loop():
     global client
     if not client.POSTING: client.POSTING = True
     else: return
-
+    print(f"----------------------- {datetime.datetime.now()} {client.myData['IS_RUNNING']}")
     await asyncio.sleep(random.choice(range(client.myData['time_interval'][0], client.myData['time_interval'][1])))             # anti-antiSelfbot
+    print(f"1 {client.myData['IS_RUNNING']}")
 
     try:
         if not client.myData['nsfw_channel'].is_nsfw():
             print("<!> Designated channel is not NSFW!"); return
-        elif not client.myData['IS_RUNNING']: return
+        elif not client.myData['IS_RUNNING']:
+            client.POSTING = False        
+            return
     except AttributeError: print("<!> Channel missing!"); return
-
+    print(f"2 {client.myData['IS_RUNNING']}")
     # await client.myData['nsfw_channel'].send(file=discord.File(random.choice(client.myData['nsfw_paths'])))
     if not await client.dClient.inUsedCheck(): return
+    print(f"3 {client.myData['IS_RUNNING']}")
     resp = await client.dClient.poolFetch()
     try:
         url = resp['large_file_url']
