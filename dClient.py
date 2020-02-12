@@ -140,9 +140,14 @@ class dClient:
                 else: return self.pool.pop(random.choice(range(len(self.pool))))
 
             try:
+                print(self.pool)
                 print("fetch index 1")
-                if order: return self.pool.pop(0)
-                else: return self.pool.pop(random.choice(range(len(self.pool))))
+                if order:
+                    print("fetch in order")
+                    return self.pool.pop(0)
+                else:
+                    print("fetch in random")
+                    return self.pool.pop(random.choice(range(len(self.pool))))
                 print("fetch index 2")
             except IndexError:
                 print("fetch index 3")
@@ -169,9 +174,8 @@ class dClient:
                 print("fetch index 11")
                 if order: return self.pool.pop(0)
                 else: return self.pool.pop(random.choice(range(len(self.pool))))
-            finally:
-                self.IN_USED = False
         finally:
+            print("finishing fetch")
             self.IN_USED = False
 
 
