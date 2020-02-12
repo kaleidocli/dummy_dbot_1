@@ -188,17 +188,16 @@ class dClient:
         temp = []
         dOrder = 0
         for d in doujins:
-            print("loading...")
             temp.append(self.doujinshiiDictFormatter(f"""<n> **[**`{d.magic}`**]** "{d.name}" ({d.pages} pages)""", -1, dOrder, d.tags))
             page = 0
             await asyncio.sleep(0)
             while True:
-                print("packing...")
                 await asyncio.sleep(0)
                 try: temp.append(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, d.tags))
                 except IndexError: break
                 page += 1
             dOrder += 1
+        print(len(temp))
         return temp
     
     def doujinshiiDictFormatter(self, url, page, doujinshiiOrder, tags):
