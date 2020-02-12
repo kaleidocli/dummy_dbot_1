@@ -59,7 +59,7 @@ class dClient:
         else: self.config = resp
         self.config_currentPlaylist = self.config['aaaaa']
 
-        self.pool = {}          # Each dClient has ONLY ONE pool, and ONLY stored in cache. Switching playlist means pool got deleted as well.
+        self.pool = []          # Each dClient has ONLY ONE pool, and ONLY stored in cache. Switching playlist means pool got deleted as well.
 
     # def __del__(self):
     #     await self.session.close()
@@ -101,7 +101,7 @@ class dClient:
             async with self.session.get('{}/{}'.format(self.config[self.config_currentPlaylist]['site'], query)) as resp:
                 content = await resp.json()
                 print(f"""<*> GET {len(content)} posts! (p={page}) (q="{resp.url}")""")
-                return content
+                return content          # content is list
 
         # NHENTAI
         else:
