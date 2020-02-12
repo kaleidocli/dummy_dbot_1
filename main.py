@@ -324,10 +324,17 @@ async def block(ctx, *args):
 @tasks.loop(seconds=3)       # anti-antiSelfbot
 async def nsfw_loop():
     global client
+
+    print(client.POSTING)
+    print(client.myData['IS_RUNNING'])
     if not client.POSTING: client.POSTING = True
     else: return
 
+    print("loop 1")
+
     await asyncio.sleep(random.choice(range(client.myData['time_interval'][0], client.myData['time_interval'][1])))             # anti-antiSelfbot
+
+    print("loop 2")
 
     try:
         if not client.myData['nsfw_channel'].is_nsfw():
@@ -338,8 +345,9 @@ async def nsfw_loop():
     except AttributeError: print("<!> Channel missing!"); return
 
     # await client.myData['nsfw_channel'].send(file=discord.File(random.choice(client.myData['nsfw_paths'])))
+    print(client.dClient.inUsedCheck())
     if not await client.dClient.inUsedCheck(): return
-
+    print(client.dClient.config[client.dClient.config_currentPlaylist]['site'])
     # DANBOORU
     if client.dClient.config[client.dClient.config_currentPlaylist]['site'] != 'nhentai':
         resp = await client.dClient.poolFetch()
@@ -364,6 +372,7 @@ async def nsfw_loop():
 
     # NHENTAI
     else:
+        print('loop fetching')
         resp = await client.dClient.poolFetch(order=1, source=1)
         await client.myData['nsfw_channel'].send(
             ">>> **[**`{}#{}#{}`**]** {}".format(

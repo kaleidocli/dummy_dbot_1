@@ -45,10 +45,9 @@ class dClient:
                 },
                 'default_prototype': {
                     'site': 'https://danbooru.donmai.us',
+                    'rating': 'explicit',
                     'tag': self.default_tag,
                     'page': 1,
-                    'rating': 'explicit',
-                    "page":16,
                     "blacklist":[
                         "guro",
                         "scat"
@@ -110,7 +109,6 @@ class dClient:
             if not tags: tags = self.config[self.config_currentPlaylist]['tag']
             print("getPost 2")
             return await self.doujinshiisToPool(nhentai.search(' '.join(tags), page=page))
-            print("getPost 3")
 
     async def poolFetch(self, first=False, order=0, source=0):
         """
