@@ -108,7 +108,9 @@ class dClient:
             print("getPost 1")
             if not tags: tags = self.config[self.config_currentPlaylist]['tag']
             print("getPost 2")
-            return await self.doujinshiisToPool(nhentai.search(' '.join(tags), page=page))
+            a = nhentai.search(' '.join(tags), page=page)
+            print(a)
+            return await self.doujinshiisToPool(a)
 
     async def poolFetch(self, first=False, order=0, source=0):
         """
@@ -187,15 +189,27 @@ class dClient:
 
         temp = []
         dOrder = 0
+        print(doujins)
         for d in doujins:
+            print(d.magic, d.name, d.pages, dOrder, d.tags)
             temp.append(self.doujinshiiDictFormatter(f"""<n> **[**`{d.magic}`**]** "{d.name}" ({d.pages} pages)""", -1, dOrder, d.tags))
             page = 0
             await asyncio.sleep(0)
+            print("before pack")
             while True:
                 await asyncio.sleep(0)
+                print(d)
+                print(page)
+                print(d[page])
+                print(d.pages)
+                print(page)
+                print(dOrder)
+                print(d.tags)
+                print(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, d.tags))
                 try: temp.append(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, d.tags))
                 except IndexError: break
                 page += 1
+            print("after pack")
             dOrder += 1
         print(len(temp))
         return temp
