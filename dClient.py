@@ -154,7 +154,7 @@ class dClient:
 
 
 
-    await def doujinshiisToPool(self, doujins):
+    async def doujinshiisToPool(self, doujins):
         """
             DICT {url, page, doujinshiiOrder}
         """
