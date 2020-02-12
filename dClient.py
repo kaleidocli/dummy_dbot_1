@@ -103,7 +103,7 @@ class dClient:
         # NHENTAI
         else:
             if not tags: tags = self.config[self.config_currentPlaylist]['tag']
-            return self.doujinshiisToPool(nhentai.search(' '.join(tags), page=page))
+            return await self.doujinshiisToPool(nhentai.search(' '.join(tags), page=page))
 
     async def poolFetch(self, first=False, order=0, source=0):
         """
@@ -154,7 +154,7 @@ class dClient:
 
 
 
-    def doujinshiisToPool(self, doujins):
+    await def doujinshiisToPool(self, doujins):
         """
             DICT {url, page, doujinshiiOrder}
         """
