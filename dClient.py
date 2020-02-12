@@ -35,21 +35,25 @@ class dClient:
                 'aaaaa': 'default',          # current playlist. sorting.
                 'default': {
                     'site': 'https://danbooru.donmai.us',
+                    'rating': 'explicit',
                     'tag': self.default_tag,
                     'page': 1,
-                    'rating': 'explicit'
+                    "blacklist":[
+                        "guro",
+                        "scat"
+                    ]
                 },
                 'default_prototype': {
                     'site': 'https://danbooru.donmai.us',
                     'tag': self.default_tag,
                     'page': 1,
-                    'rating': 'explicit'
-                },
-                "page":16,
-                "blacklist":[
-                    "guro",
-                    "scat"
-                ]
+                    'rating': 'explicit',
+                    "page":16,
+                    "blacklist":[
+                        "guro",
+                        "scat"
+                    ]
+                }
             }
             self.updateConfig(self.config, self.fpConfig)
             print('<*> Config not found, so one is created!')
@@ -102,8 +106,11 @@ class dClient:
 
         # NHENTAI
         else:
+            print("getPost 1")
             if not tags: tags = self.config[self.config_currentPlaylist]['tag']
+            print("getPost 2")
             return await self.doujinshiisToPool(nhentai.search(' '.join(tags), page=page))
+            print("getPost 3")
 
     async def poolFetch(self, first=False, order=0, source=0):
         """
@@ -162,10 +169,12 @@ class dClient:
         temp = []
         dOrder = 0
         for d in doujins:
+            print("loading...")
             temp.append(self.doujinshiiDictFormatter(f"""<n> **[**`{d.magic}`**]** "{d.name}" ({d.pages} pages)""", -1, dOrder, d.tags))
             page = 0
             await asyncio.sleep(0)
             while True:
+                print("packing...")
                 await asyncio.sleep(0)
                 try: temp.append(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, d.tags))
                 except IndexError: break

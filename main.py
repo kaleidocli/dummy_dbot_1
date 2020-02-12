@@ -258,7 +258,7 @@ async def info(ctx, *args):
         Blacklist: [`{}`]
         MOD: [`{}`]
     """.format(
-        client.myData['sites'][client.dClient.config[client.dClient.config_currentPlaylist]['site']],
+        client.dClient.config[client.dClient.config_currentPlaylist]['site'],
         '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['tag']),
         client.myData['time_interval'][0],
         client.myData['time_interval'][1],

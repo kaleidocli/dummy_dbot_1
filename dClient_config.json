@@ -1,10 +1,22 @@
 {
     "aaaaa":"default",
     "default":{
-        "site":"https:\/\/danbooru.donmai.us",
+        "site":"nhentai",
         "rating":"explicit",
         "tag":[
             "trap"
+        ],
+        "page":1,
+        "blacklist":[
+            "guro",
+            "scat"
+        ]
+    },
+    "default_prototype":{
+        "site":"nhentai",
+        "rating":"explicit",
+        "tag":[
+            "random"
         ],
         "page":1,
         "blacklist":[
