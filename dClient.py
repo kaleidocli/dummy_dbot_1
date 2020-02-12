@@ -6,6 +6,7 @@ import datetime
 import json
 
 import ujson
+import nhentai
 
 
 
@@ -38,6 +39,12 @@ class dClient:
                     'page': 1,
                     'rating': 'explicit'
                 },
+                'default_prototype': {
+                    'site': 'https://danbooru.donmai.us',
+                    'tag': self.default_tag,
+                    'page': 1,
+                    'rating': 'explicit'
+                },
                 "page":16,
                 "blacklist":[
                     "guro",
@@ -56,60 +63,74 @@ class dClient:
 
 
 
-    async def getPost(self, tags=None, page=None, limit='1000'):
+    async def getPost(self, tags=None, page=None, limit='1000', source=0):
         """
             (Str)    limit        Max=1000
             (List)   Tag          Max=2
             (Int)    Page
+            (int)    source       0==danbooru    1==nhentai
         """
-        if int(limit) > 1000: limit = '1000'
-        elif int(limit) < 0: limit = '1'
-        if page == None:
-            page = str(self.config[self.config_currentPlaylist]['page'])
-        else: page = str(page)
 
-        # QUERY: Popular over time
-        if self.config[self.config_currentPlaylist]['tag'] == ['popular']:
-            query = "explore/posts/popular.json?date={}".format(self.random_date('2010-1-1', datetime.datetime.today().strftime('%Y-%m-%d'), random.random()))
-        # QUERY: Tag
-        else:
-            if tags:
-                tag = '+'.join(tags[0:2])
+        # DANBOORU
+        if not source:
+            if int(limit) > 1000: limit = '1000'
+            elif int(limit) < 0: limit = '1'
+            if page == None:
+                page = str(self.config[self.config_currentPlaylist]['page'])
+            else: page = str(page)
+
+            # QUERY: Popular over time
+            if self.config[self.config_currentPlaylist]['tag'] == ['popular']:
+                query = "explore/posts/popular.json?date={}".format(self.random_date('2010-1-1', datetime.datetime.today().strftime('%Y-%m-%d'), random.random()))
+            # QUERY: Tag
             else:
-                if not self.config[self.config_currentPlaylist]['tag']: self.config[self.config_currentPlaylist]['tag'] = self.default_tag
-                # QUERY: Random
-                if self.config[self.config_currentPlaylist]['tag'] == ['random']:
-                    tag = '?random=true'
+                if tags:
+                    tag = '+'.join(tags[0:2])
                 else:
-                    tag = 'tags={}'.format('+'.join(self.config[self.config_currentPlaylist]['tag']))
-            query = 'posts.json?{}&limit={}&page={}&rating={}'.format(tag, limit, page, self.config[self.config_currentPlaylist]['rating'])
+                    if not self.config[self.config_currentPlaylist]['tag']: self.config[self.config_currentPlaylist]['tag'] = self.default_tag
+                    # QUERY: Random
+                    if self.config[self.config_currentPlaylist]['tag'] == ['random']:
+                        tag = '?random=true'
+                    else:
+                        tag = 'tags={}'.format('+'.join(self.config[self.config_currentPlaylist]['tag']))
+                query = 'posts.json?{}&limit={}&page={}&rating={}'.format(tag, limit, page, self.config[self.config_currentPlaylist]['rating'])
 
-        async with self.session.get('{}/{}'.format(self.config[self.config_currentPlaylist]['site'], query)) as resp:
-            content = await resp.json()
-            print(f"""<*> GET {len(content)} posts! (p={page}) (q="{resp.url}")""")
-            return content
+            async with self.session.get('{}/{}'.format(self.config[self.config_currentPlaylist]['site'], query)) as resp:
+                content = await resp.json()
+                print(f"""<*> GET {len(content)} posts! (p={page}) (q="{resp.url}")""")
+                return content
 
-    async def poolFetch(self, first=False):
+        # NHENTAI
+        else:
+            if not tags: tags = self.config[self.config_currentPlaylist]['tag']
+            return self.doujinshiisToPool(nhentai.search(' '.join(tags), page=page))
+
+    async def poolFetch(self, first=False, order=0, source=0):
         """
             Randomly fetch a response DICT from pool.
             If pool is empty, create one, using current playlist's config
+
+            (int) order            0==random   1==chronical
+            (int) source           0==danbooru    1==nhentai
         """
         
         self.IN_USED = True
         try:
             if self.RESET_POOL:
-                self.pool = await self.getPost()
+                self.pool = await self.getPost(source=source)
                 if not self.pool:
                     self.setTag(self.default_tag)
-                    self.pool = await self.getPost()
+                    self.pool = await self.getPost(source=source)
                     print('<*> Query is exhausted. Set back to default tag.')
                 self.updateConfig(self.config, self.fpConfig)
                 self.RESET_POOL = False
                 print(f"<*> Resetting pool... (tag={self.config[self.config_currentPlaylist]['tag']})")
-                return self.pool.pop(random.choice(range(len(self.pool))))
+                if order: return self.pool.pop(0)
+                else: return self.pool.pop(random.choice(range(len(self.pool))))
 
             try:
-                return self.pool.pop(random.choice(range(len(self.pool))))
+                if order: return self.pool.pop(0)
+                else: return self.pool.pop(random.choice(range(len(self.pool))))
             except IndexError:
                 if self.ACTIVATED or first:
                     self.config[self.config_currentPlaylist]['page'] += 1
@@ -117,20 +138,48 @@ class dClient:
                 else:
                     self.ACTIVATED = True
                     print('<*> Pool is empty. Re-filling...')
-                self.pool = await self.getPost()
+                self.pool = await self.getPost(source=source)
                 if not self.pool:
                     self.setTag(self.default_tag)
                     self.config[self.config_currentPlaylist]['page'] = 1
-                    self.pool = await self.getPost()
+                    self.pool = await self.getPost(source=source)
                     print('<*> Query is exhausted. Set back to default tag.')
                 self.updateConfig(self.config, self.fpConfig)
-                return self.pool.pop(random.choice(range(len(self.pool))))
+                if order: return self.pool.pop(0)
+                else: return self.pool.pop(random.choice(range(len(self.pool))))
             finally:
                 self.IN_USED = False
         finally:
             self.IN_USED = False
 
 
+
+    def doujinshiisToPool(self, doujins):
+        """
+            DICT {url, page, doujinshiiOrder}
+        """
+
+        temp = []
+        dOrder = 0
+        for d in doujins:
+            temp.append(self.doujinshiiDictFormatter(f"""<n> **[**`{d.magic}`**]** "{d.name}" ({d.pages} pages)""", -1, dOrder, d.tags))
+            page = 0
+            await asyncio.sleep(0)
+            while True:
+                await asyncio.sleep(0)
+                try: temp.append(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, d.tags))
+                except IndexError: break
+                page += 1
+            dOrder += 1
+        return temp
+    
+    def doujinshiiDictFormatter(self, url, page, doujinshiiOrder, tags):
+        return {
+            "url": url,
+            "page": page,
+            "doujinshiiOrder": doujinshiiOrder,
+            "tags": tags
+        }
 
     def getConfig(self, fpConfig):
         try:
@@ -170,6 +219,14 @@ class dClient:
         try:
             self.IN_USED = True
             self.config[self.config_currentPlaylist]['page'] = int(page_number)
+            self.RESET_POOL = True
+        finally:
+            self.IN_USED = False
+
+    def setSite(self, site):
+        try:
+            self.IN_USED = True
+            self.config[self.config_currentPlaylist]['site'] = site
             self.RESET_POOL = True
         finally:
             self.IN_USED = False

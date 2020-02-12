@@ -70,6 +70,10 @@ async def on_ready():
     client.myData['IS_RUNNING'] = True
     client.myData['IS_RECORDING'] = False
     client.myData['blocklist'] = []
+    client.myData['sites'] = {
+        'danbooru': 'https://danbooru.donmai.us',
+        'nhentai': 'nhentai'
+    }
 
     client.CM = ConversationManager(targetChannelID=660081356860030989)
 
@@ -212,6 +216,24 @@ async def playback(ctx, *args):
         =================================== by {}|{}
         """.format(ctx.author.id, ctx.author.name))
 
+@client.command()
+@commands.cooldown(1, 30, type=BucketType.guild)
+@check_nsfwChannel()
+async def change_site(ctx, *args):
+    try:
+        client.myData['sites'][args[0]]
+        while True:
+            if not await client.dClient.inUsedCheck():
+                await asyncio.sleep(0.5)
+            else: break
+        client.dClient.setSite(client.myData['sites'][args[0]])
+    except IndexError: await ctx.send(":warning: Missing site names (`{}`)".format('` `'.join(tuple(client.myData['sites'].keys())))); return
+    except KeyError: await ctx.send(":warning: Invalid options! (`{}`)".format('` `'.join(tuple(client.myData['sites'].keys())))); return
+
+    await ctx.send(f"switching to **`{client.myData['sites'][args[0]]}`**... please wait a while...")
+
+
+
 @client.command(brief=client.helpDict['grant_mod']['brief'])
 @check_owner()
 async def grant_mod(ctx, *args):
@@ -236,7 +258,7 @@ async def info(ctx, *args):
         Blacklist: [`{}`]
         MOD: [`{}`]
     """.format(
-        client.dClient.config[client.dClient.config_currentPlaylist]['site'],
+        client.myData['sites'][client.dClient.config[client.dClient.config_currentPlaylist]['site']],
         '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['tag']),
         client.myData['time_interval'][0],
         client.myData['time_interval'][1],
@@ -304,9 +326,8 @@ async def nsfw_loop():
     global client
     if not client.POSTING: client.POSTING = True
     else: return
-    print(f"----------------------- {datetime.datetime.now()} {client.myData['IS_RUNNING']}")
+
     await asyncio.sleep(random.choice(range(client.myData['time_interval'][0], client.myData['time_interval'][1])))             # anti-antiSelfbot
-    print(f"1 {client.myData['IS_RUNNING']}")
 
     try:
         if not client.myData['nsfw_channel'].is_nsfw():
@@ -315,29 +336,47 @@ async def nsfw_loop():
             client.POSTING = False        
             return
     except AttributeError: print("<!> Channel missing!"); return
-    print(f"2 {client.myData['IS_RUNNING']}")
+
     # await client.myData['nsfw_channel'].send(file=discord.File(random.choice(client.myData['nsfw_paths'])))
     if not await client.dClient.inUsedCheck(): return
-    print(f"3 {client.myData['IS_RUNNING']}")
-    resp = await client.dClient.poolFetch()
-    try:
-        url = resp['large_file_url']
-    except KeyError:
+
+    # DANBOORU
+    if client.dClient.config[client.dClient.config_currentPlaylist]['site'] != 'nhentai':
+        resp = await client.dClient.poolFetch()
         try:
-            url = resp['file_url']
+            url = resp['large_file_url']
         except KeyError:
-            url = resp['source']
-    await client.myData['nsfw_channel'].send(
-        ">>> **[**`{}#{}`**][**`{}`**]** {}".format(
-            client.dClient.config[client.dClient.config_currentPlaylist]['page'],
-            len(client.dClient.pool),
-            '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['tag']),
-            url
+            try:
+                url = resp['file_url']
+            except KeyError:
+                url = resp['source']
+        await client.myData['nsfw_channel'].send(
+            ">>> **[**`{}#{}`**][**`{}`**]** {}".format(
+                client.dClient.config[client.dClient.config_currentPlaylist]['page'],
+                len(client.dClient.pool),
+                '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['tag']),
+                url
+                )
             )
-        )
-    
-    client.POSTING = False
-    print(f" |  [{datetime.datetime.now()}]   ---   [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}][{len(client.dClient.pool)}] ", url)
+
+        client.POSTING = False
+        print(f" |  [{datetime.datetime.now()}]   ---   <d> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}][{len(client.dClient.pool)}] ", url)
+
+    # NHENTAI
+    else:
+        resp = await client.dClient.poolFetch(order=1, source=1)
+        await client.myData['nsfw_channel'].send(
+            ">>> **[**`{}#{}#{}`**]** {}".format(
+                client.dClient.config[client.dClient.config_currentPlaylist]['page'],
+                resp['doujinshiiOrder'],
+                resp['page'],
+                resp['url']
+                )
+            )
+
+        client.POSTING = False
+        print(f" |  [{datetime.datetime.now()}]   ---   <n> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}.{resp['doujinshiiOrder']}.{resp['page']}][{len(client.dClient.pool)}] ", resp['url'])
+
 
 
 
@@ -392,7 +431,7 @@ def exiting():
     print("========================== SAVED and EXIT ==========================")
 
 async def starting():
-    await client.login(client.myData['TOKEN'], bot=False)
+    await client.login(client.myData['TOKEN'], bot=client.myData['IS_BOT'])
     # await client.login('NDQ2MzU2Mjg3MTIzNDg4NzY5.XiWEyg._jdIrF2tuYxoIL65ZpUfy1_iRt0', bot=False)
     print("LOGGED IN")
     await client.connect(reconnect=True)
