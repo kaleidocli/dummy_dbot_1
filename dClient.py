@@ -7,6 +7,7 @@ import json
 
 import ujson
 import nhentai
+import traceback
 
 
 
@@ -212,14 +213,19 @@ class dClient:
             temp.append(a)
             page = 0
             print("before pack")
-            while True:
-                # await asyncio.sleep(0)
-                try:
-                    temp.append(self.doujinshiiDictFormatter(d[page], dpages - page, dOrder, dtags))
-                except IndexError:
-                    # print("breaking...")
-                    break
-                page += 1
+            try:
+                while True:
+                    # await asyncio.sleep(0)
+                    try:
+                        temp.append(self.doujinshiiDictFormatter(d[page], dpages - page, dOrder, dtags))
+                    except IndexError:
+                        # print("breaking...")
+                        break
+                    page += 1
+            except Exception as e:
+                print(e)
+                print(traceback.format_exc())
+                exit()
             # print("after pack")
             dOrder += 1
             print("End loading...")
