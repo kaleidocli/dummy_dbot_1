@@ -190,33 +190,37 @@ class dClient:
         dOrder = 0
         for d in doujins:
             print("Begin loading...")
-            print(d)
+            # print(d)
             try: print(d.magic)
             except AttributeError: print("error at magic")
-            try: print(d.pages)
-            except AttributeError: print("error at pages")
+            try:
+                dpages = d.pages
+            except AttributeError:  # Sometimes, for some reason, Doujinshii doesn't have pages (?)
+                dpages = 0
+                print("error at pages")
             try: print(dOrder)
             except AttributeError: print("error at dOrder")
             try: print(d.name)
             except AttributeError: print("error at name")
-            try: print(d.tags)
-            except AttributeError: print("error at tags")
-            temp.append(self.doujinshiiDictFormatter(f"""<n> **[**`{d.magic}`**]** "{d.name}" ({d.pages} pages)""", -1, dOrder, d.tags))
+            try:
+                dtags = d.tags
+            except AttributeError:  # Sometimes, for some reason, Doujinshii doesn't have tags (?)
+                dtags = ['n/a']
+                print("error at tags")
+            temp.append(self.doujinshiiDictFormatter(f"""<n> **[**`{d.magic}`**]** "{d.name}" ({dpages} pages)""", -1, dOrder, d.tags))
             page = 0
             await asyncio.sleep(0)
-            print("before pack")
+            # print("before pack")
             while True:
                 await asyncio.sleep(0)
                 try:
-                    try: dtags = d.tags
-                    except AttributeError: dtags = ['n/a']          # Sometimes, for some reason, Doujinshii doesn't have tags (?)
-                    temp.append(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, dtags))
+                    temp.append(self.doujinshiiDictFormatter(d[page], dpages - page, dOrder, dtags))
                 except IndexError:
-                    print("breaking...")
+                    # print("breaking...")
                     break
                 page += 1
-            print("after pack")
-            print(doujins)
+            # print("after pack")
+            # print(doujins)
             dOrder += 1
             print("End loading...")
         print('EXTRACTING PACK -------')
