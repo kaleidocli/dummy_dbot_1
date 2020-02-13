@@ -189,8 +189,8 @@ class dClient:
 
         temp = []
         dOrder = 0
-        print(doujins)
         for d in doujins:
+            print(d)
             print(d.magic, d.name, d.pages, dOrder, d.tags)
             temp.append(self.doujinshiiDictFormatter(f"""<n> **[**`{d.magic}`**]** "{d.name}" ({d.pages} pages)""", -1, dOrder, d.tags))
             page = 0
@@ -213,6 +213,7 @@ class dClient:
                     break
                 page += 1
             print("after pack")
+            print(doujins)
             dOrder += 1
         print('EXTRACTING PACK -------')
         print(len(temp))
