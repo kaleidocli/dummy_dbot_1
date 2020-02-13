@@ -207,7 +207,7 @@ class dClient:
             except AttributeError:  # Sometimes, for some reason, Doujinshii doesn't have tags (?)
                 dtags = ['n/a']
                 print("error at tags")
-            temp.append(self.doujinshiiDictFormatter(f"""<n> **[**`{d.magic}`**]** "{d.name}" ({dpages} pages)""", -1, dOrder, d.tags))
+            temp.append(self.doujinshiiDictFormatter(f"""<n> **[**`{d.magic}`**]** "{d.name}" ({dpages} pages)""", -1, dOrder, dtags))
             page = 0
             await asyncio.sleep(0)
             # print("before pack")
@@ -224,7 +224,6 @@ class dClient:
             dOrder += 1
             print("End loading...")
         print('EXTRACTING PACK -------')
-        print(len(temp))
         return temp
     
     def doujinshiiDictFormatter(self, url, page, doujinshiiOrder, tags):
