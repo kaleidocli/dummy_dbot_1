@@ -210,7 +210,7 @@ class dClient:
                 try:
                     try: dtags = d.tags
                     except AttributeError: dtags = ['n/a']          # Sometimes, for some reason, Doujinshii doesn't have tags (?)
-                    temp.append(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, tags))
+                    temp.append(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, dtags))
                 except IndexError:
                     print("breaking...")
                     break
