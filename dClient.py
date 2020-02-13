@@ -122,58 +122,57 @@ class dClient:
         """
         
         self.IN_USED = True
-        print("into fetch")
+        # print("into fetch")
         try:
             if self.RESET_POOL:
-                print("reseting pool 1")
+                # print("reseting pool 1")
                 self.pool = await self.getPost(source=source)
-                print("reseting pool 2")
+                # print("reseting pool 2")
                 if not self.pool:
-                    print("reseting pool 3")
+                    # print("reseting pool 3")
                     self.setTag(self.default_tag)
                     self.pool = await self.getPost(source=source)
                     print('<*> Query is exhausted. Set back to default tag.')
-                print("reseting pool 4")
+                # print("reseting pool 4")
                 self.updateConfig(self.config, self.fpConfig)
-                print("reseting pool 5")
+                # print("reseting pool 5")
                 self.RESET_POOL = False
                 print(f"<*> Resetting pool... (tag={self.config[self.config_currentPlaylist]['tag']})")
                 if order: return self.pool.pop(0)
                 else: return self.pool.pop(random.choice(range(len(self.pool))))
 
             try:
-                print(self.pool)
-                print("fetch index 1")
+                # print("fetch index 1")
                 if order:
-                    print("fetch in order")
+                    # print("fetch in order")
                     return self.pool.pop(0)
                 else:
-                    print("fetch in random")
+                    # print("fetch in random")
                     return self.pool.pop(random.choice(range(len(self.pool))))
-                print("fetch index 2")
+                # print("fetch index 2")
             except IndexError:
-                print("fetch index 3")
+                # print("fetch index 3")
                 if self.ACTIVATED or first:
-                    print("fetch index 4")
+                    # print("fetch index 4")
                     self.config[self.config_currentPlaylist]['page'] += 1
                     print('<*> Pool is empty. Re-filling with new page...')
                 else:
-                    print("fetch index 5")
+                    # print("fetch index 5")
                     self.ACTIVATED = True
                     print('<*> Pool is empty. Re-filling...')
-                print("fetch index 6")
+                # print("fetch index 6")
                 self.pool = await self.getPost(source=source)
-                print("fetch index 7")
+                # print("fetch index 7")
                 if not self.pool:
-                    print("fetch index 8")
+                    # print("fetch index 8")
                     self.setTag(self.default_tag)
-                    print("fetch index 9")
+                    # print("fetch index 9")
                     self.config[self.config_currentPlaylist]['page'] = 1
                     self.pool = await self.getPost(source=source)
                     print('<*> Query is exhausted. Set back to default tag.')
-                print("fetch index 10")
+                # print("fetch index 10")
                 self.updateConfig(self.config, self.fpConfig)
-                print("fetch index 11")
+                # print("fetch index 11")
                 if order: return self.pool.pop(0)
                 else: return self.pool.pop(random.choice(range(len(self.pool))))
         finally:
@@ -209,7 +208,9 @@ class dClient:
             while True:
                 await asyncio.sleep(0)
                 try:
-                    temp.append(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, d.tags))
+                    try: dtags = d.tags
+                    except AttributeError: dtags = ['n/a']          # Sometimes, for some reason, Doujinshii doesn't have tags (?)
+                    temp.append(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, tags))
                 except IndexError:
                     print("breaking...")
                     break
