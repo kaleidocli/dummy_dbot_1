@@ -372,11 +372,7 @@ async def nsfw_loop():
 
     # NHENTAI
     else:
-        print('loop fetching')
         resp = await client.dClient.poolFetch(order=1, source=1)
-        print("done fetching")
-        print(resp)
-        print(client.dClient.config[client.dClient.config_currentPlaylist]['page'])
         await client.myData['nsfw_channel'].send(
             ">>> **[**`{}#{}#{}`**]** {}".format(
                 client.dClient.config[client.dClient.config_currentPlaylist]['page'],
@@ -387,7 +383,6 @@ async def nsfw_loop():
             )
 
         client.POSTING = False
-        print("loop finish")
         print(f" |  [{datetime.datetime.now()}]   ---   <n> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}.{resp['doujinshiiOrder']}.{resp['page']}][{len(client.dClient.pool)}] ", resp['url'])
 
 

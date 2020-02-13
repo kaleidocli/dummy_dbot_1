@@ -190,8 +190,18 @@ class dClient:
         temp = []
         dOrder = 0
         for d in doujins:
+            print("Begin loading...")
             print(d)
-            print(d.magic, d.name, d.pages, dOrder, d.tags)
+            try: print(d.magic)
+            except AttributeError: print("error at magic")
+            try: print(d.pages)
+            except AttributeError: print("error at pages")
+            try: print(dOrder)
+            except AttributeError: print("error at dOrder")
+            try: print(d.name)
+            except AttributeError: print("error at name")
+            try: print(d.tags)
+            except AttributeError: print("error at tags")
             temp.append(self.doujinshiiDictFormatter(f"""<n> **[**`{d.magic}`**]** "{d.name}" ({d.pages} pages)""", -1, dOrder, d.tags))
             page = 0
             await asyncio.sleep(0)
@@ -199,14 +209,6 @@ class dClient:
             while True:
                 await asyncio.sleep(0)
                 try:
-                    print(d)
-                    print(page)
-                    print(d[page])
-                    print(d.pages)
-                    print(page)
-                    print(dOrder)
-                    print(d.tags)
-                    print(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, d.tags))
                     temp.append(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, d.tags))
                 except IndexError:
                     print("breaking...")
@@ -215,6 +217,7 @@ class dClient:
             print("after pack")
             print(doujins)
             dOrder += 1
+            print("End loading...")
         print('EXTRACTING PACK -------')
         print(len(temp))
         return temp
