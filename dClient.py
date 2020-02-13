@@ -198,19 +198,23 @@ class dClient:
             print("before pack")
             while True:
                 await asyncio.sleep(0)
-                print(d)
-                print(page)
-                print(d[page])
-                print(d.pages)
-                print(page)
-                print(dOrder)
-                print(d.tags)
-                print(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, d.tags))
-                try: temp.append(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, d.tags))
-                except IndexError: break
+                try:
+                    print(d)
+                    print(page)
+                    print(d[page])
+                    print(d.pages)
+                    print(page)
+                    print(dOrder)
+                    print(d.tags)
+                    print(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, d.tags))
+                    temp.append(self.doujinshiiDictFormatter(d[page], d.pages - page, dOrder, d.tags))
+                except IndexError:
+                    print("breaking...")
+                    break
                 page += 1
             print("after pack")
             dOrder += 1
+        print('EXTRACTING PACK -------')
         print(len(temp))
         return temp
     
