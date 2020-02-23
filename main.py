@@ -2,6 +2,7 @@ import asyncio
 import os
 import random
 import atexit
+import traceback
 
 import discord
 from discord.ext.commands.cooldowns import BucketType
@@ -33,13 +34,26 @@ def prepHelpDict(helper_path='helper.json'):
 
 
 
-
+# BOOT ==================
 with open('config.json', mode='r') as f:    # Rename 'config_example.json' to 'config.json'
-    temp = ujson.load(f)
+    configAll = ujson.load(f)
 
+while True:
+    try:
+        profileName = input("\n\n| Choose a profile:\n+ [{}]\n> ".format(']\n+ ['.join(configAll.keys())))
+        temp = configAll[profileName]
+        break
+    except KeyError:
+        print("\n<!> Invalid profile.")
+
+
+
+# INIT ==================
 client = commands.Bot(command_prefix=temp['prefix'])
 # client.remove_command('help')
 client.myData = temp
+client.myData['configAll'] = configAll
+client.myData['profileName'] = profileName
 client.helpDict = prepHelpDict()
 client.myData['root_config'] = ['TOKEN', 'IS_BOT', 'owner', 'moderator', 'prefix', 'active_guild', 'nsfw_root_dirs', 'nsfw_channel_id', 'command_aliases', 'time_interval']
 client.IS_BOT_READY = False
@@ -72,8 +86,15 @@ async def on_ready():
     client.myData['blocklist'] = []
     client.myData['sites'] = {
         'danbooru': 'https://danbooru.donmai.us',
-        'nhentai': 'nhentai'
+        'nhentai': 'nhentai',
+        'reddit': 'https://www.reddit.com'
     }
+    client.myData['site_codes'] = {
+        'https://danbooru.donmai.us': 0,
+        'nhentai': 1,
+        'https://www.reddit.com': 2
+    }
+    client.myData['site_code'] = client.myData['site_codes'][client.dClient.config[client.dClient.config_currentPlaylist]['site']]
 
     client.CM = ConversationManager(targetChannelID=660081356860030989)
 
@@ -87,21 +108,21 @@ async def on_message(msg):
     if msg.author.id in client.myData['blocklist']: return
 
     # Sticking reaction
-    try:
-        if msg.guild.id == 479636890358906881:
-            # # CONVERSATIONN ANALYSIS
-            # if client.myData['IS_RECORDING'] and msg.channel.id == client.CM.config['targetChannelID']:
-            #     content = filteringConv(msg)
-            #     if content:
-            #         try: await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
-            #         except RuntimeError:
-            #             await asyncio.sleep(0.01)
-            #             await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
+    # try:
+    #     if msg.guild.id == 479636890358906881:
+    #         # # CONVERSATIONN ANALYSIS
+    #         # if client.myData['IS_RECORDING'] and msg.channel.id == client.CM.config['targetChannelID']:
+    #         #     content = filteringConv(msg)
+    #         #     if content:
+    #         #         try: await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
+    #         #         except RuntimeError:
+    #         #             await asyncio.sleep(0.01)
+    #         #             await client.CM.msgListener((str(datetime.datetime.now()), msg.author.id, msg.author.name, content))
 
-            content = msg.content.lower()
-            if 'uon' in content or 'ươn' in content or 'uown' in content: 
-                await msg.add_reaction('\U0001f595')
-    except AttributeError: pass
+    #         content = msg.content.lower()
+    #         if 'uon' in content or 'ươn' in content or 'uown' in content: 
+    #             await msg.add_reaction('\U0001f595')
+    # except AttributeError: pass
     # elif msg.author.id in (337234105219416067, 214128381762076672, 413423796456914955) or msg.content == 'baa':
     #     # await msg.add_reaction('\U0001f411')
     #     await msg.channel.send(random.choice(client.msg_bank))
@@ -153,7 +174,7 @@ async def change_tag(ctx, *args):
 
     client.dClient.setTag(list(args))
     print(client.dClient.config[client.dClient.config_currentPlaylist]['tag'])
-    await ctx.channel.send("Okay Imma bu some cu with `{}`. If I can't, just `{}` will do for me. yea?".format('` `'.join(args), '` `'.join(client.dClient.default_tag)))
+    await ctx.channel.send("Okay Imma bu some cu with `{}`. If I can't, just `{}` will do for me. yea?".format('` `'.join(args), '` `'.join(client.dClient.default_tag[client.dClient.config[client.dClient.config_currentPlaylist]['site']])))
 
 @client.command(aliases=client.myData['command_aliases']['change_page'], brief=client.helpDict['change_page']['brief'])
 @commands.cooldown(1, 10, type=BucketType.user)
@@ -227,10 +248,29 @@ async def change_site(ctx, *args):
                 await asyncio.sleep(0.5)
             else: break
         client.dClient.setSite(client.myData['sites'][args[0]])
+        client.myData['site_code'] = client.myData['site_codes'][client.dClient.config[client.dClient.config_currentPlaylist]['site']]
     except IndexError: await ctx.send(":warning: Missing site names (`{}`)".format('` `'.join(tuple(client.myData['sites'].keys())))); return
     except KeyError: await ctx.send(":warning: Invalid options! (`{}`)".format('` `'.join(tuple(client.myData['sites'].keys())))); return
 
     await ctx.send(f"switching to **`{client.myData['sites'][args[0]]}`**... please wait a while...")
+
+@client.command()
+@commands.cooldown(1, 10, type=BucketType.guild)
+@check_nsfwChannel()
+async def skip(ctx, *args):
+    if client.myData['site_code'] != 1:
+        await ctx.send(":warning: Manga-streaming mode only!"); return
+
+    while client.POSTING:
+        await asyncio.sleep(0)
+    
+    client.POSTING = True
+
+    await ctx.send("Please wait...")
+    await client.dClient.mangaSkip()
+
+    await ctx.send("Skipped~ <3")
+    client.POSTING = False
 
 
 
@@ -338,44 +378,70 @@ async def nsfw_loop():
             return
     except AttributeError: print("<!> Channel missing!"); return
 
-    # await client.myData['nsfw_channel'].send(file=discord.File(random.choice(client.myData['nsfw_paths'])))
-    if not await client.dClient.inUsedCheck(): return
-    # DANBOORU
-    if client.dClient.config[client.dClient.config_currentPlaylist]['site'] != 'nhentai':
-        resp = await client.dClient.poolFetch()
-        try:
-            url = resp['large_file_url']
-        except KeyError:
+    try:
+        # await client.myData['nsfw_channel'].send(file=discord.File(random.choice(client.myData['nsfw_paths'])))
+        if not await client.dClient.inUsedCheck(): return
+        # DANBOORU
+        if client.myData['site_code'] == 0:
+            resp = await client.dClient.poolFetch()
+
             try:
-                url = resp['file_url']
+                url = resp['large_file_url']
             except KeyError:
-                url = resp['source']
-        await client.myData['nsfw_channel'].send(
-            ">>> **[**`{}#{}`**][**`{}`**]** {}".format(
-                client.dClient.config[client.dClient.config_currentPlaylist]['page'],
-                len(client.dClient.pool),
-                '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['tag']),
-                url
+                try:
+                    url = resp['file_url']
+                except KeyError:
+                    url = resp['source']
+            await client.myData['nsfw_channel'].send(
+                ">>> **[**`{}#{}`**][**`{}`**]** {}".format(
+                    client.dClient.config[client.dClient.config_currentPlaylist]['page'],
+                    len(client.dClient.pool),
+                    '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['tag']),
+                    url
+                    )
                 )
-            )
 
-        client.POSTING = False
-        print(f" |  [{datetime.datetime.now()}]   ---   <d> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}][{len(client.dClient.pool)}] ", url)
+            print(f" |  [{datetime.datetime.now()}]   ---   <d> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}][{len(client.dClient.pool)}] ", url)
 
-    # NHENTAI
-    else:
-        resp = await client.dClient.poolFetch(order=1, source=1)
-        await client.myData['nsfw_channel'].send(
-            ">>> **[**`{}#{}#{}`**]** {}".format(
-                client.dClient.config[client.dClient.config_currentPlaylist]['page'],
-                resp['doujinshiiOrder'],
-                resp['page'],
-                resp['url']
+        # NHENTAI
+        elif client.myData['site_code'] == 1:
+            # Search by ID / Search by tag
+            if client.dClient.config[client.dClient.config_currentPlaylist]['tag'][0].isdigit():
+                resp = await client.dClient.poolFetch(order=1, source=1, id=client.dClient.config[client.dClient.config_currentPlaylist]['tag'][0])
+            else:
+                resp = await client.dClient.poolFetch(order=1, source=1)
+
+            await client.myData['nsfw_channel'].send(
+                ">>> **[**`{}#{}#{}`**]** {} **[**`{}`**]**".format(
+                    client.dClient.config[client.dClient.config_currentPlaylist]['page'],
+                    resp['doujinshiiOrder'],
+                    resp['page'],
+                    resp['url'],
+                    '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['tag'])
+                    )
                 )
-            )
 
+            print(f" |  [{datetime.datetime.now()}]   ---   <n> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}.{resp['doujinshiiOrder']}.{resp['page']}][{len(client.dClient.pool)}] ", resp['url'])
+
+        # REDDIT
+        else:
+            resp = await client.dClient.poolFetch(source=2)
+
+            await client.myData['nsfw_channel'].send(
+                """>>> **[**`{}#{}`**]**[**`r/{}`**| **"{}"**] {}""".format(
+                    client.dClient.config[client.dClient.config_currentPlaylist]['page'],
+                    len(client.dClient.pool),
+                    resp['subreddit'],
+                    resp['title'],
+                    resp['url']
+                    )
+                )
+
+            print(f" |  [{datetime.datetime.now()}]   ---   <r> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}][{len(client.dClient.pool)}] ", resp['url'])
+    except:
+        print(traceback.format_exc())
+    finally:
         client.POSTING = False
-        print(f" |  [{datetime.datetime.now()}]   ---   <n> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}.{resp['doujinshiiOrder']}.{resp['page']}][{len(client.dClient.pool)}] ", resp['url'])
 
 
 
@@ -410,8 +476,9 @@ def updateConfig(myData, config_path='config.json'):
     temp_conf = {}
     for o in myData['root_config']:
         temp_conf[o] = myData[o]
+    client.myData['configAll'][client.myData['profileName']] = temp_conf
     with open(config_path, mode='w') as f:
-        ujson.dump(temp_conf, f, indent=4)
+        ujson.dump(client.myData['configAll'], f, indent=4)
 
 def filteringConv(msg):
     """
@@ -435,6 +502,103 @@ async def starting():
     # await client.login('NDQ2MzU2Mjg3MTIzNDg4NzY5.XiWEyg._jdIrF2tuYxoIL65ZpUfy1_iRt0', bot=False)
     print("LOGGED IN")
     await client.connect(reconnect=True)
+
+
+
+
+# ================================ TRIVIA ==================================
+
+@client.command(hidden=True)
+async def swear(ctx, *args):
+    args = list(args)
+    resp = ''; resp2 = ''
+    swears = {'vn': ['địt', 'đĩ', 'đụ', 'cặc', 'cằc', 'đéo', 'cứt', 'lồn', 'nứng', 'vãi', 'lồn má', 'đĩ lồn', 'tét lồn', 'dí lồn', 'địt mẹ', 'lồn trâu', 'lồn voi', 'lồn ngựa', 'con mẹ', 'bú', 'mút cặc'],
+            'en': ['fucking', 'cunt', 'shit', 'motherfucker', 'faggot', 'retard', 'goddamn', 'jerk']}
+    subj = ['fucking', 'faggot', 'goddamn', 'jerk', 'asshole', 'freaking', 'son of the bitch']
+    endp = [', you fucking hear me?', ', you fucking duck', ' fucking retard', ' motherfucker', ' bitch', ' asshole', ', dickkk', ', and fuck you', ', fucking idiots', ' you shitty head']
+    expp = ['sucking', 'orally fucking', 'killing', 'fucking', 'jerking']
+    fl_fuck = ['your mom', 'the whole world just to', 'sick little bastard', 'the hell outa', 'my ass']
+
+    #model_subject = ('i', 'he', 'she', 'you', 'they', 'it', "you're", "youre", 'we', "it's", "i'm", "im", 'i')
+    #model_questionWH = ('what', 'why', 'where', 'when', 'how', 'which', 'who', 'y', 'wat', 'wot')
+    #model_questionYN = ('is', 'are', 'were', 'have', 'has', 'was', 'do', 'does', 'did')
+    #model_sentenceNEGATIVE = ('not', "didn't", "don't", "doesn't", "isn't", "aren't", "haven't", "hasn't", "wasn't", "weren't", "didn't", "dont", "doesnt", "isnt", "arent", "havent", "hasnt", "wasnt", "werent", "hadn't", "hadnt")
+
+    # Swear
+    if args[0] not in swears.keys(): lang = 'vn'
+    else: lang = args[0]; args.pop(0)
+
+    args = ' '.join(args).lower().split(' ')
+
+    if lang == 'en':
+        for word in args:
+            ## SUBJECT scan
+            #if word in model_subject:
+            #    scursor = args.index(word)
+            #    SUBJECT = args[scursor]
+            #    OBJECT = args[scursor+1:]
+            #    preSUB = args[:scursor-1]
+            #    _mode = 'ENGLISH'
+            #    break
+
+            _mode = 'ENGRISK'
+            if random.choice([True, False]):
+                if word.lower() in ['i', 'he', 'she', 'you', 'they', 'it', "you're", "youre", 'we', "it's", "i'm", "im", 'is', 'are', 'will', 'so', "don't", 'not']:
+                    resp += f" {word} {random.choice(subj)}"; continue
+                elif word.lower() == args[-1]:
+                    resp += f" {word}{random.choice(endp)}"; continue
+                elif word.lower() in ['love', 'like', 'hate', 'luv']:
+                    resp += f" {word} {random.choice(expp)}"; continue
+                elif word.lower() in ['fuck', 'fck', 'suck']:
+                    resp += f" {word} {random.choice(fl_fuck)}"; continue
+                elif word.lower() in ['bastard', 'dick', 'shit', 'bitch', 'jerk']:
+                    resp += f" {word} {random.choice(['like you', 'filthy like you'])}"; continue
+                resp += f" {word} {random.choice(swears[lang])}"
+            else: resp += f" {word}"
+        
+        #for word in args:
+        #    # SUBJECT scan
+        #    if word in model_subject:
+        #        scursor = args.index(word)
+        #        SUBJECT = args[scursor]
+        #        OBJECT = args[scursor+1:]
+        #        preSUB = args[:scursor-1]
+        #        _mode = 'ENGLISH'
+        #        break
+
+        #if _mode == 'ENGLISH':
+        #    a = set(preSUB).intersection(model_questionWH)
+        #    if set(preSUB).intersection(model_questionWH):
+        #        __form = 'WH'
+        #        preSUB.index(a[0])
+
+        #    elif set(preSUB).intersection(model_questionYN): __form = 'YN'
+        #    elif set(OBJECT).intersection(('?', '??', '???', '????', '..?')): __form = 'YN'
+        #    elif set(preSUB).intersection(model_sentenceNEGATIVE): __form = 'YN'
+        #    elif set(OBJECT).intersection(model_sentenceNEGATIVE): __form = 'NE'
+        #    else: __form = 'NORMAL'
+
+    else:
+        for word in args:
+            if random.choice([True, False]): resp += f" {word} {random.choice(swears[lang])}"
+            else: resp += f" {word}"
+
+    # Mock
+    for char in resp:
+        if random.choice([True, False]): resp2 += char.upper()
+        else: resp2 += char
+
+    await ctx.send(resp2)
+
+
+
+
+
+
+
+
+
+
 
 
 

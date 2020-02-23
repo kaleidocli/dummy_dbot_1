@@ -1,10 +1,10 @@
 {
     "aaaaa":"default",
     "default":{
-        "site":"nhentai",
+        "site":"https:\/\/www.reddit.com",
         "rating":"explicit",
         "tag":[
-            "trap"
+            "hentai"
         ],
         "page":1,
         "blacklist":[
