@@ -1,10 +1,10 @@
 {
     "aaaaa":"default",
     "default":{
-        "site":"https:\/\/www.reddit.com",
+        "site":"nhentai",
         "rating":"explicit",
         "tag":[
-            "hentai"
+            "fullcolor"
         ],
         "page":1,
         "blacklist":[

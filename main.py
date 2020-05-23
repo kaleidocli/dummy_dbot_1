@@ -3,6 +3,7 @@ import os
 import random
 import atexit
 import traceback
+from time import sleep
 
 import discord
 from discord.ext.commands.cooldowns import BucketType
@@ -33,14 +34,153 @@ def prepHelpDict(helper_path='helper.json'):
 
 
 
+# Some func ===================
+globalVar = {
+    'config_path': 'config.json'
+}
+
+def createProfile(globalVar):
+    model = {
+        "TOKEN":"",
+        "owner": 1111111111111111111,
+        "moderator": [1111111111111111111, 1111111111111111111],
+        "IS_BOT":False,
+        "prefix":"",
+        "active_guild":1111111111111111111,
+        "nsfw_root_dirs":[],
+        "nsfw_channel_id":1111111111111111111,
+        "command_aliases":{
+            "change_tag":[
+                "bucu"
+            ],
+            "change_page":[
+                "gay"
+            ],
+            "change_timeInterval":[
+                "dit"
+            ],
+            "playback":[
+                "ditme"
+            ],
+            "info":[
+                "sua"
+            ]
+        },
+        "time_interval":[
+            15,
+            30
+        ]
+    }
+
+    # INFO
+    print("====== CREATE A PROFILE ======")
+    while True:
+        pName = input("| Input profile name. (No space allowed)\n| > ")
+        try: pName = pName.split(' ')[0]
+        except IndexError: continue
+        break
+    pToken = input("| Input poster's token.\n| > ")
+    while True:
+        try: 
+            pOwnerId = int(input("| Input owner's ID.\n| > "))
+            break
+        except ValueError:
+            print("<!> Invalid owner's ID.")
+    while True:
+        pIsBot = input("| Is the poster a BOT account, or a USER account? (y/n)\n| > ")
+        pIsBot = pIsBot.lower()
+        if pIsBot == 'y':
+            pIsBot = True
+        elif pIsBot == 'n':
+            pIsBot = False
+        else:
+            print("<!> Invalid response!")
+            continue
+        break
+    pPrefix = input("! Input poster's prefix.\n| > ")
+    while True:
+        try: 
+            pGuildId = int(input("| Input server's ID. (The server to post images)\n| > "))
+            break
+        except ValueError:
+            print("<!> Invalid server's ID.")
+    while True:
+        try: 
+            pChannelId = int(input("| Input channel's ID. (The channel to post images, and must be NSFW)\n| > "))
+            break
+        except ValueError:
+            print("<!> Invalid channel's ID.")
+    print("====== PLEASE WAIT... ======")
+    sleep(1) # Purely for dramatic purpose
+    model['TOKEN'] = pToken
+    model['owner'] = pOwnerId
+    model['moderator'].append(pOwnerId)
+    model['IS_BOT'] = pIsBot
+    model['prefix'] = pPrefix
+    model['active_guild'] = pGuildId
+    model['nsfw_channel_id'] = pChannelId
+    print("====== EXTRACTING at UID 5000... ======")
+    sleep(2) # Also for dramatic purpose
+    print("====== PROFILE SET UP! ======")
+
+    return pName, model
+        
+def deleteProfile(globalVar, configAll, targetProfile):
+    try:
+        del configAll[targetProfile]
+    except KeyError:
+        return 0
+    if not configAll: return 2
+    return configAll
+
+def rewriteConfig(globalVar, configAll):
+    with open(globalVar['config_path'], mode='w+') as f:
+        ujson.dump(configAll, f, indent=4)
+
+def loadConfig(globalVar):
+    try:
+        with open(globalVar['config_path'], mode='r') as f:    # Rename 'config_example.json' to 'config.json'
+            configAll = ujson.load(f)
+        if not configAll:
+            raise FileNotFoundError
+    except FileNotFoundError:
+        print("<!> No profile found! Creating new one...")
+        configAll = {}
+        name, model = createProfile(globalVar)
+        configAll[name] = model
+
+        rewriteConfig(globalVar, configAll)
+        
+    return configAll
+
+def console(globalVar, userInput):
+
+    if userInput == 'new':
+        createProfile(globalVar)
+    elif userInput == 'del':
+        targetProfile = input("| Type the profile's name to delete:\n| > ") 
+        resp = deleteProfile(globalVar, configAll, targetProfile)
+        if resp or resp == 2:
+            rewriteConfig(globalVar, configAll)
+            print("<*> Profile deleted!")
+        else:
+            print("<!> Profile name not found!")
+    else:
+        return False
+    return True
+
+
 
 # BOOT ==================
-with open('config.json', mode='r') as f:    # Rename 'config_example.json' to 'config.json'
-    configAll = ujson.load(f)
+configAll = loadConfig(globalVar)
 
 while True:
     try:
-        profileName = input("\n\n| Choose a profile:\n+ [{}]\n> ".format(']\n+ ['.join(configAll.keys())))
+        profileName = input("| [new]   ---   Create a new profile\n| [del]   ---   Delete a profile\n| Choose a profile:\n+ [{}]\n> ".format(']\n+ ['.join(configAll.keys())))
+
+        if console(globalVar, profileName):
+            continue
+
         temp = configAll[profileName]
         break
     except KeyError:
@@ -87,12 +227,14 @@ async def on_ready():
     client.myData['sites'] = {
         'danbooru': 'https://danbooru.donmai.us',
         'nhentai': 'nhentai',
-        'reddit': 'https://www.reddit.com'
+        'reddit': 'https://www.reddit.com',
+        'yandere': 'https://yande.re'
     }
     client.myData['site_codes'] = {
         'https://danbooru.donmai.us': 0,
         'nhentai': 1,
-        'https://www.reddit.com': 2
+        'https://www.reddit.com': 2,
+        'https://yande.re': 3
     }
     client.myData['site_code'] = client.myData['site_codes'][client.dClient.config[client.dClient.config_currentPlaylist]['site']]
 
@@ -163,10 +305,10 @@ def check_owner():
     #         ```
     #     """)
 
-@client.command(aliases=client.myData['command_aliases']['change_tag'], brief=client.helpDict['change_tag']['brief'])
+@client.command(aliases=client.myData['command_aliases']['change_tag'], brief=client.helpDict['tag']['brief'])
 @commands.cooldown(1, 10, type=BucketType.user)
 @check_nsfwChannel()
-async def change_tag(ctx, *args):
+async def tag(ctx, *args):
     if not args: return
     common = set(args).intersection(client.dClient.config[client.dClient.config_currentPlaylist]['blacklist'])
     if common:
@@ -176,10 +318,10 @@ async def change_tag(ctx, *args):
     print(client.dClient.config[client.dClient.config_currentPlaylist]['tag'])
     await ctx.channel.send("Okay Imma bu some cu with `{}`. If I can't, just `{}` will do for me. yea?".format('` `'.join(args), '` `'.join(client.dClient.default_tag[client.dClient.config[client.dClient.config_currentPlaylist]['site']])))
 
-@client.command(aliases=client.myData['command_aliases']['change_page'], brief=client.helpDict['change_page']['brief'])
+@client.command(aliases=client.myData['command_aliases']['change_page'], brief=client.helpDict['page']['brief'])
 @commands.cooldown(1, 10, type=BucketType.user)
 @check_nsfwChannel()
-async def change_page(ctx, *args):
+async def page(ctx, *args):
     if not args: return
     args = list(args)
 
@@ -190,10 +332,10 @@ async def change_page(ctx, *args):
             await ctx.channel.send(f"hmm page {args[0]} huh...")
     except IndexError: return
 
-@client.command(aliases=client.myData['command_aliases']['change_timeInterval'], brief=client.helpDict['change_timeInterval']['brief'])
+@client.command(aliases=client.myData['command_aliases']['change_timeInterval'], brief=client.helpDict['time']['brief'])
 @commands.cooldown(1, 10, type=BucketType.user)
 @check_nsfwChannel()
-async def change_timeInterval(ctx, *args):
+async def time(ctx, *args):
     try:
         a = int(args[0])
         b = int(args[1])
@@ -237,10 +379,10 @@ async def playback(ctx, *args):
         =================================== by {}|{}
         """.format(ctx.author.id, ctx.author.name))
 
-@client.command()
+@client.command(brief=client.helpDict['site']['brief'])
 @commands.cooldown(1, 30, type=BucketType.guild)
 @check_nsfwChannel()
-async def change_site(ctx, *args):
+async def site(ctx, *args):
     try:
         client.myData['sites'][args[0]]
         while True:
@@ -254,7 +396,7 @@ async def change_site(ctx, *args):
 
     await ctx.send(f"switching to **`{client.myData['sites'][args[0]]}`**... please wait a while...")
 
-@client.command()
+@client.command(brief=client.helpDict['skip']['brief'])
 @commands.cooldown(1, 10, type=BucketType.guild)
 @check_nsfwChannel()
 async def skip(ctx, *args):
@@ -271,6 +413,62 @@ async def skip(ctx, *args):
 
     await ctx.send("Skipped~ <3")
     client.POSTING = False
+
+@client.command(brief=client.helpDict['tags']['brief'])
+@commands.cooldown(1, 10, type=BucketType.guild)
+@check_nsfwChannel()
+async def tags(ctx, *args):
+
+    # DANBOORU
+    if client.myData['site_code'] == 0:
+        # Prep
+        category = 'any'
+        order = 'count'
+        limit = 30
+        for i in args:
+            # tag
+            if i == args[0]: tag = args[0]
+            # category
+            elif i in tuple(client.dClient.CATEGORY_INDEX.keys()): category = i
+            elif i in ('name', 'date', 'count'): order = i
+            elif i.isdigit(): limit = (int(i) if int(i) <= limit else limit)
+
+        try: resp = await client.dClient.searchTag(tag, source=client.myData['site_code'], category=category, order=order, limit=limit)
+        except UnboundLocalError: await ctx.send(":warning: Syntax: `change_site [tag] (any | general | artist | copyright | character) (name | date | count) (result_limit)` (`()` are optional)"); return
+
+        line = ''
+        for r in resp:
+            await asyncio.sleep(0)
+            line += "**`{}`**||+{}|| ".format(r['name'], r['post_count'])
+
+    # YANDERE
+    elif client.myData['site_code'] == 3:
+        # Prep
+        category = 'any'
+        order = 'count'
+        limit = 30
+        for i in args:
+            # tag
+            if i == args[0]: tag = args[0]
+            # category
+            elif i in tuple(client.dClient.CATEGORY_INDEX.keys()): category = i
+            elif i in ('name', 'date', 'count'): order = i
+            elif i.isdigit(): limit = (int(i) if i <= limit else limit)
+
+        try: resp = await client.dClient.searchTag(tag, source=client.myData['site_code'], category=category, order=order, limit=limit)
+        except UnboundLocalError: await ctx.send(":warning: Syntax: `change_site [tag] (any | general | artist | copyright | character) (name | date | count)` (`()` are optional)"); return
+
+        line = ''
+        for r in resp:
+            await asyncio.sleep(0)
+            line += "**`{}`**||+{}|| ".format(r['name'], r['count'])
+
+    # site_not_supported
+    else:
+        await ctx.send(":warning: Current site is not supported with this functionality."); return
+    
+
+    await ctx.send(line)
 
 
 
@@ -401,7 +599,7 @@ async def nsfw_loop():
                     )
                 )
 
-            print(f" |  [{datetime.datetime.now()}]   ---   <d> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}][{len(client.dClient.pool)}] ", url)
+            print(f" |  [{datetime.datetime.now()}]   ---   <D> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}][{len(client.dClient.pool)}] ", url)
 
         # NHENTAI
         elif client.myData['site_code'] == 1:
@@ -421,10 +619,10 @@ async def nsfw_loop():
                     )
                 )
 
-            print(f" |  [{datetime.datetime.now()}]   ---   <n> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}.{resp['doujinshiiOrder']}.{resp['page']}][{len(client.dClient.pool)}] ", resp['url'])
+            print(f" |  [{datetime.datetime.now()}]   ---   <N> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}.{resp['doujinshiiOrder']}.{resp['page']}][{len(client.dClient.pool)}] ", resp['url'])
 
         # REDDIT
-        else:
+        elif client.myData['site_code'] == 2:
             resp = await client.dClient.poolFetch(source=2)
 
             await client.myData['nsfw_channel'].send(
@@ -437,7 +635,30 @@ async def nsfw_loop():
                     )
                 )
 
-            print(f" |  [{datetime.datetime.now()}]   ---   <r> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}][{len(client.dClient.pool)}] ", resp['url'])
+            print(f" |  [{datetime.datetime.now()}]   ---   <R> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}][{len(client.dClient.pool)}] ", resp['url'])
+
+        # YANDERE
+        else:
+            resp = await client.dClient.poolFetch(source=3)
+
+            try:
+                url = resp['jpeg_url']
+            except KeyError:
+                try:
+                    url = resp['large_file_url']
+                except KeyError:
+                    url = resp['source']
+            await client.myData['nsfw_channel'].send(
+                ">>> **[**`{}#{}`**][**`{}`**]** {}".format(
+                    client.dClient.config[client.dClient.config_currentPlaylist]['page'],
+                    len(client.dClient.pool),
+                    '` `'.join(client.dClient.config[client.dClient.config_currentPlaylist]['tag']),
+                    url
+                    )
+                )
+
+            print(f" |  [{datetime.datetime.now()}]   ---   <Y> [{client.dClient.config[client.dClient.config_currentPlaylist]['page']}][{len(client.dClient.pool)}] ", url)
+
     except:
         print(traceback.format_exc())
     finally:
@@ -503,102 +724,10 @@ async def starting():
     print("LOGGED IN")
     await client.connect(reconnect=True)
 
+# ====== CONFIG
 
 
-
-# ================================ TRIVIA ==================================
-
-@client.command(hidden=True)
-async def swear(ctx, *args):
-    args = list(args)
-    resp = ''; resp2 = ''
-    swears = {'vn': ['địt', 'đĩ', 'đụ', 'cặc', 'cằc', 'đéo', 'cứt', 'lồn', 'nứng', 'vãi', 'lồn má', 'đĩ lồn', 'tét lồn', 'dí lồn', 'địt mẹ', 'lồn trâu', 'lồn voi', 'lồn ngựa', 'con mẹ', 'bú', 'mút cặc'],
-            'en': ['fucking', 'cunt', 'shit', 'motherfucker', 'faggot', 'retard', 'goddamn', 'jerk']}
-    subj = ['fucking', 'faggot', 'goddamn', 'jerk', 'asshole', 'freaking', 'son of the bitch']
-    endp = [', you fucking hear me?', ', you fucking duck', ' fucking retard', ' motherfucker', ' bitch', ' asshole', ', dickkk', ', and fuck you', ', fucking idiots', ' you shitty head']
-    expp = ['sucking', 'orally fucking', 'killing', 'fucking', 'jerking']
-    fl_fuck = ['your mom', 'the whole world just to', 'sick little bastard', 'the hell outa', 'my ass']
-
-    #model_subject = ('i', 'he', 'she', 'you', 'they', 'it', "you're", "youre", 'we', "it's", "i'm", "im", 'i')
-    #model_questionWH = ('what', 'why', 'where', 'when', 'how', 'which', 'who', 'y', 'wat', 'wot')
-    #model_questionYN = ('is', 'are', 'were', 'have', 'has', 'was', 'do', 'does', 'did')
-    #model_sentenceNEGATIVE = ('not', "didn't", "don't", "doesn't", "isn't", "aren't", "haven't", "hasn't", "wasn't", "weren't", "didn't", "dont", "doesnt", "isnt", "arent", "havent", "hasnt", "wasnt", "werent", "hadn't", "hadnt")
-
-    # Swear
-    if args[0] not in swears.keys(): lang = 'vn'
-    else: lang = args[0]; args.pop(0)
-
-    args = ' '.join(args).lower().split(' ')
-
-    if lang == 'en':
-        for word in args:
-            ## SUBJECT scan
-            #if word in model_subject:
-            #    scursor = args.index(word)
-            #    SUBJECT = args[scursor]
-            #    OBJECT = args[scursor+1:]
-            #    preSUB = args[:scursor-1]
-            #    _mode = 'ENGLISH'
-            #    break
-
-            _mode = 'ENGRISK'
-            if random.choice([True, False]):
-                if word.lower() in ['i', 'he', 'she', 'you', 'they', 'it', "you're", "youre", 'we', "it's", "i'm", "im", 'is', 'are', 'will', 'so', "don't", 'not']:
-                    resp += f" {word} {random.choice(subj)}"; continue
-                elif word.lower() == args[-1]:
-                    resp += f" {word}{random.choice(endp)}"; continue
-                elif word.lower() in ['love', 'like', 'hate', 'luv']:
-                    resp += f" {word} {random.choice(expp)}"; continue
-                elif word.lower() in ['fuck', 'fck', 'suck']:
-                    resp += f" {word} {random.choice(fl_fuck)}"; continue
-                elif word.lower() in ['bastard', 'dick', 'shit', 'bitch', 'jerk']:
-                    resp += f" {word} {random.choice(['like you', 'filthy like you'])}"; continue
-                resp += f" {word} {random.choice(swears[lang])}"
-            else: resp += f" {word}"
-        
-        #for word in args:
-        #    # SUBJECT scan
-        #    if word in model_subject:
-        #        scursor = args.index(word)
-        #        SUBJECT = args[scursor]
-        #        OBJECT = args[scursor+1:]
-        #        preSUB = args[:scursor-1]
-        #        _mode = 'ENGLISH'
-        #        break
-
-        #if _mode == 'ENGLISH':
-        #    a = set(preSUB).intersection(model_questionWH)
-        #    if set(preSUB).intersection(model_questionWH):
-        #        __form = 'WH'
-        #        preSUB.index(a[0])
-
-        #    elif set(preSUB).intersection(model_questionYN): __form = 'YN'
-        #    elif set(OBJECT).intersection(('?', '??', '???', '????', '..?')): __form = 'YN'
-        #    elif set(preSUB).intersection(model_sentenceNEGATIVE): __form = 'YN'
-        #    elif set(OBJECT).intersection(model_sentenceNEGATIVE): __form = 'NE'
-        #    else: __form = 'NORMAL'
-
-    else:
-        for word in args:
-            if random.choice([True, False]): resp += f" {word} {random.choice(swears[lang])}"
-            else: resp += f" {word}"
-
-    # Mock
-    for char in resp:
-        if random.choice([True, False]): resp2 += char.upper()
-        else: resp2 += char
-
-    await ctx.send(resp2)
-
-
-
-
-
-
-
-
-
-
+    
 
 
 

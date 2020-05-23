@@ -21,6 +21,17 @@ class dClient:
     def __init__(self, fpConfig='dClient_config.json', default_tag=None):
         """
             (List)      default_tag
+
+            To update new site, consider:
+                + self.TAGS_PER_PAGE
+                + self.getPost()
+                + self.getTag()
+            also in <main.py>, consider:
+                + nsfw_loop()
+                + search_tag()
+                + client.myData['sites']
+                + client.myData['site_code']
+            All should adhere to general.
         """
 
         self.ACTIVATED = False
@@ -30,9 +41,14 @@ class dClient:
             self.default_tag = {
                 'nhentai': ['random'],
                 'https://danbooru.donmai.us': ['popular'],
-                'https://www.reddit.com': ['cosplaybabes']
+                'https://www.reddit.com': ['cosplaybabes'],
+                'https://yande.re': ['popular']
             }
         else: self.default_tag = default_tag
+        self.infiniteTag = [
+            'nhentai',
+            'https://yande.re'
+        ]
         self.session = aiohttp.ClientSession(json_serialize=ujson.dumps)
         self.fpConfig = fpConfig
         resp = self.getConfig(self.fpConfig)
@@ -67,8 +83,20 @@ class dClient:
 
         self.pool = []          # Each dClient has ONLY ONE pool, and ONLY stored in cache. Switching playlist means pool got deleted as well.
 
-    # def __del__(self):
-    #     await self.session.close()
+        self.CATEGORY_INDEX = {
+            'any': '',
+            'general': '0',
+            'artist': '1',
+            'copyright': '3',
+            'character': '4'
+        }
+        self.TAGS_PER_PAGE = {     # Site_code : Number of tags received per page (1 means unknown)
+            0: 20,
+            1: 1,
+            2: 1,
+            3: 52
+        }
+
 
 
 
@@ -126,7 +154,7 @@ class dClient:
                 return await self.doujinshiisToPool([i for i in nhentai.search(' '.join(tags), page=page)])
 
         # REDDIT
-        else:
+        elif source == 2:
             # Preparing
             # print("getPost 6")
             if int(limit) > 100: limit = '100'
@@ -141,6 +169,36 @@ class dClient:
             # print("getPost 8")
             print(f"""<*> GET {len(content)} posts! (p={page}) (base_q="{query}")""")
             return await self.redditToPool(content)
+
+        # YANDE.RE
+        else:
+            if int(limit) > 1000: limit = '1000'
+            elif int(limit) < 0: limit = '1'
+            if page == None:
+                page = str(self.config[self.config_currentPlaylist]['page'])
+            else: page = str(page)
+
+            # QUERY: Popular over time
+            if self.config[self.config_currentPlaylist]['tag'] == ['popular']:
+                query = "/post/popular_by_week.json?date={}".format(self.random_date('day=1&month=1&year=2010', datetime.datetime.today().strftime('day=%d&month=%m&year=%Y'), random.random(), format='day=%d&month=%m&year=%Y'))
+            # QUERY: Tag
+            else:
+                if tags:
+                    tag = '+'.join(tags)
+                else:
+                    if not self.config[self.config_currentPlaylist]['tag']: self.config[self.config_currentPlaylist]['tag'] = self.default_tag[self.config[self.config_currentPlaylist]['site']]
+                    # QUERY: Random
+                    if self.config[self.config_currentPlaylist]['tag'] == ['random']:
+                        tag = '?random=true'
+                    else:
+                        tag = 'tags={}'.format('+'.join(self.config[self.config_currentPlaylist]['tag']))
+                query = 'post.json?{}&limit={}&page={}&rating={}'.format(tag, limit, page, self.config[self.config_currentPlaylist]['rating'])
+
+            async with self.session.get('{}/{}'.format(self.config[self.config_currentPlaylist]['site'], query)) as resp:
+                content = await resp.json()
+                print(f"""<*> GET {len(content)} posts! (p={page}) (q="{resp.url}")""")
+                return content          # content is list
+
 
 
     async def poolFetch(self, first=False, order=0, source=0, id=None):
@@ -214,6 +272,59 @@ class dClient:
             self.IN_USED = False
 
 
+
+    async def searchTag(self, tag, source=0, category='any', order='count', limit=30):
+        """
+            tag         (String)
+            source      (Int)       Adhere to general format
+            category    (String)    general, artist, copyright, character
+            order       (String)    Either: 'name', 'date', 'count'
+            limit       (Int)       Estimating each tag containing 20 chars. In total would be 1000 chars for 30 tags.
+
+            Returning a list (no result/OK result), or False (site_not_supported)
+        """
+
+        # DANBOORU
+        if source == 0:
+            content = []
+
+            # Prep
+            if '*' not in tag: tag = '*{}*'.format(tag)
+            try: category = self.CATEGORY_INDEX[category]
+            except KeyError: category = 0
+            query = """tags.json?search[name_or_alias_matches]={}&search[category]={}&search[order]={}&search[hide_empty]=yes""".format(tag, category, order)
+
+            for page in range(limit//self.TAGS_PER_PAGE[source] + (1 if limit%self.TAGS_PER_PAGE[source] else 0)):
+                await asyncio.sleep(0)
+
+                async with self.session.get('{}/{}'.format(self.config[self.config_currentPlaylist]['site'], query)) as resp:
+                    content = content + await resp.json()
+                    print(f"""<*> RECEIVED {len(content)} tags! (p={page}) (q="{resp.url}")""")
+                    return content          # content is list
+
+        # YANDERE
+        elif source == 3:
+            content = []
+
+            # Prep
+            if '*' not in tag: tag = '*{}*'.format(tag)
+            try: category = self.CATEGORY_INDEX[category]
+            except KeyError: category = 0
+            query = """tag.json?name={}&type={}&order={}&limit={}""".format(tag, category, order, limit)
+
+            for page in range(limit//self.TAGS_PER_PAGE[source] + (1 if limit%self.TAGS_PER_PAGE[source] else 0)):
+                await asyncio.sleep(0)
+
+                async with self.session.get('{}/{}'.format(self.config[self.config_currentPlaylist]['site'], query)) as resp:
+                    content = content + await resp.json()
+                    print(f"""<*> RECEIVED {len(content)} tags! (p={page}) (q="{resp.url}")""")
+                    return content          # content is list
+
+        # Site_not_supported
+        else:
+            return False
+
+        
 
     async def redditRequest(self, base_query, page=1):
         count = 1
@@ -306,7 +417,7 @@ class dClient:
         """
         try:
             self.IN_USED = True
-            if self.config[self.config_currentPlaylist]['site'] == 'nhentai': self.config[self.config_currentPlaylist]['tag'] = tag
+            if self.config[self.config_currentPlaylist]['site'] in self.infiniteTag: self.config[self.config_currentPlaylist]['tag'] = tag
             else: self.config[self.config_currentPlaylist]['tag'] = tag[0:2]
             self.config[self.config_currentPlaylist]['page'] = 1
             self.RESET_POOL = True
@@ -375,5 +486,5 @@ class dClient:
         return time.strftime(format, time.localtime(ptime))
 
 
-    def random_date(self, start, end, prop):
-        return self.str_time_prop(start, end, '%Y-%m-%d', prop)
+    def random_date(self, start, end, prop, format='%Y-%m-%d'):
+        return self.str_time_prop(start, end, format, prop)

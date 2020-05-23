@@ -1,18 +1,18 @@
 {
-    "change_tag": {
-        "brief": "Change up to 2 tags of current NSFW Playlist. (e.g. 'prefix_herealiases_here yuri tentacle')",
+    "tag": {
+        "brief": "Change tags of current playlist (e.g. `perefix_heretag 4)",
         "help": ""
     },
-    "change_page": {
-        "brief": "Change page of current NSFW Playlist. Page is automatically increased when current paage is completed. (e.g. 'prefix_herealiases_here 4')",
+    "page": {
+        "brief": "Change page of current Playlist. Page is automatically increased when current paage is completed. (e.g. 'prefix_herepage 4')",
         "help": ""
     },
-    "change_timeInterval": {
-        "brief": "Adjust the randomizing amount of seconds between images. Min=8, Max=180, Min-distance=20. (e.g. 'prefix_herealiases_here 10 25')",
+    "time": {
+        "brief": "Adjust the randomizing amount of seconds between images. Min=8, Max=180, Min-distance=20. (e.g. 'prefix_heretime 10 25')",
         "help": ""
     },
     "playback": {
-        "brief": "[MOD] Resume/Pause the NSFW Playlist.",
+        "brief": "`resume`/`pause` the NSFW Playlist.",
         "help": ""
     },
     "grant_mod": {
@@ -20,7 +20,19 @@
         "help": ""
     },
     "info": {
-        "brief": "Show some info",
+        "brief": "Show some info of me.",
+        "help": ""
+    },
+    "site": {
+        "brief": "Change site of current playlist. (e.g. prefix_heresite [site_name_here])",
+        "help": ""
+    },
+    "tags": {
+        "brief": "Search for a tag, with parameters. `change_site [tag] (any | general | artist | copyright | character) (name | date | count) (result_limit)` ----- (`()` are optional)",
+        "help": ""
+    },
+    "skip": {
+        "brief": "Skip current manga. (manga/comic/sets playlist only)",
         "help": ""
     }
 }
