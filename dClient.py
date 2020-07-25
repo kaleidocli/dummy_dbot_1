@@ -6,7 +6,7 @@ import datetime
 import json
 
 import ujson
-import nhentai
+from nhentai import nhentai
 import traceback
 
 
