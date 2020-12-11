@@ -4,6 +4,8 @@ import random
 import atexit
 import traceback
 from time import sleep
+import datetime
+from io import BytesIO
 
 import discord
 from discord.ext.commands.cooldowns import BucketType
@@ -12,7 +14,8 @@ import ujson
 
 from dClient import dClient
 from conversation import Conversation, ConversationManager
-import datetime
+from utils import ImageCensoring, ImageDescribing
+from PIL import Image
 
 
 
@@ -221,7 +224,7 @@ async def on_ready():
     client.dClient = dClient()
     client.myData['nsfw_paths'] = getPaths(client.myData['nsfw_root_dirs'])
     client.myData['nsfw_channel'] = client.get_channel(client.myData['nsfw_channel_id'])
-    client.myData['IS_RUNNING'] = True
+    client.myData['IS_RUNNING'] = False
     client.myData['IS_RECORDING'] = False
     client.myData['blocklist'] = []
     client.myData['sites'] = {
@@ -556,10 +559,43 @@ async def block(ctx, *args):
     else:
         await ctx.send(":white_check_mark: BLOCKED!"); return
 
+@client.command()
+@commands.cooldown(1, 10, type=BucketType.user)
+@check_nsfwChannel()
+async def censor_this(ctx, *args):
+    CENSORING_MODE = "RECTANGLE"
+    try:
+        if args[0].upper() not in  ["RECTANGLE", "BLUR", "PIXELATE"]:
+            await ctx.send(f":x: Unknown option! (`RECTANGLE` | `BLUR` | `PIXELATE`)")
+            return
+        CENSORING_MODE = args[0].upper()
+    except IndexError: pass
+
+    # Saving image
+    if not ctx.message.attachments:
+        return
+    await ctx.message.attachments[0].save('imageBIO_in.png', use_cached=True)
+
+    # Make an Image obj out of the buffer
+    imageImage = Image.open('imageBIO_in.png')
+
+    # Describing
+    tDescription = ImageDescribing('imageBIO_in.png')
+
+    # Censoring
+    imageImage = ImageCensoring(imageImage, tDescription, CENSORING_MODE)
+
+    # Saving output
+    imageBIO_out = BytesIO()
+    imageImage.save(imageBIO_out, "png")
+    imageBIO_out.seek(0)
+
+    await ctx.send("`{}`".format("` `".join([f"{i['label']}: {i['score']}" for i in tDescription])), file=discord.File(fp=imageBIO_out, filename='stuff.png'))
+    imageBIO_out.close()
+    imageImage.close()
 
 
-
-@tasks.loop(seconds=3)       # anti-antiSelfbot
+@tasks.loop(seconds=3)       # anti-antiSelfbot       (Enabled in on_ready()    ||      On hold)
 async def nsfw_loop():
     global client
 
